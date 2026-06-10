@@ -1,0 +1,12 @@
+{
+  "title": "API Reference",
+  "pages": [
+    "signup-signin",
+    "current-user",
+    "email-verification",
+    "password-management",
+    "sessions",
+    "oauth",
+    "authorization"
+  ]
+}

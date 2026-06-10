@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package forkfit.intelligence.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Service defining the main interfaces for the ForkFit AI reasoning, planning, and learning loops.
+service IntelligenceService {
+  // Analyzes the raw user prompt to classify goals, constraints, diet, and budget parameters.
+  rpc ProcessIntent(IntentRequest) returns (IntentResponse);
+
+  // Executes the cognitive reasoning graph (LangGraph) and returns a real-time stream
+  // of agent execution steps, safety audits, and UI visualization packages.
+  rpc OrchestrateAgentGraph(OrchestrateGraphRequest) returns (stream OrchestrateGraphResponse);
+
+  // Triggers the learning loop reflection engine to extract rules, preferences, and feedback metrics.
+  rpc TriggerReflection(ReflectionRequest) returns (ReflectionResponse);
+}
+
+// Request payload for intent analysis.
+message IntentRequest {
+  string prompt = 1;
+  string user_id = 2;
+}
+
+// Intent Classification Blueprint.
+message IntentResponse {
+  string goal = 1;                  // e.g. "muscle_gain", "weight_loss", "maintenance"
+  string diet = 2;                  // e.g. "vegetarian", "vegan", "keto", "omnivore"
+  double budget_limit = 3;          // Numeric price threshold per day/week
+  string budget_currency = 4;       // e.g. "INR", "USD"
+  string timeline = 5;              // e.g. "daily", "weekly"
+  repeated string constraints = 6;  // e.g. "no eggs", "lactose intolerant"
+  string raw_analysis_json = 7;     // Detailed LLM analysis parameters
+}
+
+// User Profile, Health, and Safety Context.
+message UserContext {
+  string user_id = 1;
+  repeated string allergies = 2;
+  repeated string medical_conditions = 3;
+  repeated string preferred_foods = 4;
+  repeated string avoided_foods = 5;
+  double daily_calorie_target = 6;
+  double target_protein_g = 7;
+  double target_carbs_g = 8;
+  double target_fat_g = 9;
+  double budget_limit = 10;
+  string preferred_cuisine = 11;
+}
+
+// Request to orchestrate the multi-agent graph.
+message OrchestrateGraphRequest {
+  string trace_id = 1;              // Unique request execution trace ID
+  string session_id = 2;            // Active chat session/thread ID
+  string prompt = 3;                // Raw query from the user
+  UserContext context = 4;          // Complete profile / preference context package
+  repeated ChatMessageHistory history = 5; // Previous dialogue context
+}
+
+// Dialog history message structure.
+message ChatMessageHistory {
+  string role = 1;                  // "user" or "assistant"
+  string content = 2;               // Text content of the message
+  google.protobuf.Timestamp sent_at = 3;
+}
+
+// Intermediate agent execution step status update.
+message AgentStepUpdate {
+  string step_id = 1;               // Unique step execution ID
+  string agent_name = 2;            // Name of agent (Safety, Nutrition, Budget, Culture, Recipe, etc.)
+  string status = 3;                // "running", "completed", "failed"
+  string step_type = 4;             // "llm_call", "tool_call", "retrieval", "validation"
+  string input_payload_json = 5;    // JSON representation of inputs passed to the node
+  string output_payload_json = 6;   // JSON representation of outputs returned by the node
+  int64 latency_ms = 7;             // Execution duration
+  string error_message = 8;         // populated if status is "failed"
+}
+
+// Component details for client-side visual cards.
+message UIElement {
+  string type = 1;                  // "chart", "mermaid", "timeline", "recipe_card", "dashboard" 
+  string title = 2;                 // Friendly header for the UI component
+  string config_json = 3;           // Configuration formatting values (colors, styles, labels)
+  string data_json = 4;             // Direct rendering data (dataset values, flows, recipe steps)
+}
+
+// Progressive text token from LLM streaming output.
+message TextDelta {
+  string content = 1;        // Token/chunk of text (e.g. "Here's ", "your weekly ")
+  int32 delta_index = 2;     // Monotonically increasing index (0, 1, 2, ...)
+  bool is_complete = 3;      // True on the last delta — signals end of text stream
+  string delta_type = 4;     // "markdown" (default), "thinking", "tool_call"
+}
+
+// Main streaming response envelope.
+message OrchestrateGraphResponse {
+  string trace_id = 1;
+  oneof payload {
+    AgentStepUpdate step_update = 2; // Real-time trace step logging
+    string final_text = 3;           // Markdown content from Assistant
+    UIElement ui_element = 4;        // Interactive charts or dashboards to render
+    TextDelta text_delta = 5;        // progressive token streaming
+  }
+}
+
+// Request to run the reflection engine.
+message ReflectionRequest {
+  string user_id = 1;
+  string session_id = 2;
+  string chat_message_id = 3;       // Links to the rated AI response
+  int32 feedback_rating = 4;        // Score from 1 to 5
+  string feedback_text = 5;         // User review context details
+}
+
+// Response from the reflection loop.
+message ReflectionResponse {
+  bool success = 1;
+  repeated string extracted_memories = 2; // List of preferences written to agent_memories
+}

@@ -1,0 +1,178 @@
+---
+title: Email Verification
+description: Verify user email addresses using one-time passwords (OTP).
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+## Overview
+
+ForkFit uses a **6-digit OTP** (one-time password) system for email verification. When a user signs up, a verification OTP is automatically sent. Users can also request a new OTP at any time.
+
+<Steps>
+  <Step>
+
+    ### User signs up or requests a verification OTP
+
+    The server generates a 6-digit OTP, hashes it with SHA-256, and stores it in the `otp_verifications` table with an expiration time.
+
+  </Step>
+  <Step>
+
+    ### OTP is delivered via email
+
+    The OTP is sent to the user's email address (currently logged to stdout in development).
+
+  </Step>
+  <Step>
+
+    ### User submits the OTP
+
+    The client sends the OTP to the verification endpoint. The server validates it against the stored hash.
+
+  </Step>
+  <Step>
+
+    ### Email is marked as verified
+
+    On success, the user's `email_verified` flag is set to `true`.
+
+  </Step>
+</Steps>
+
+<Callout type="info" title="OTP Configuration">
+  - **TTL:** Configurable via `OTP_TTL_SECONDS` (default: 10 minutes)
+  - **Max Attempts:** Configurable via `OTP_MAX_ATTEMPTS` (default: 5)
+  - Each failed attempt increments the counter. After max attempts, the OTP is permanently invalidated.
+</Callout>
+
+---
+
+## Send Verification OTP
+
+Request a new email verification OTP. The user must exist and be active.
+
+```
+POST /api/v1/auth/send-verification-otp
+```
+
+### Request Body
+
+<TypeTable
+  type={{
+    email: {
+      type: 'string',
+      description: 'The email address to send the verification OTP to. Must belong to an existing, active user.',
+      required: true,
+    },
+  }}
+/>
+
+### Response
+
+```json title="Response — 200 OK"
+{
+  "sent": true
+}
+```
+
+### Example
+
+<Tabs items={['cURL', 'JavaScript']}>
+  <Tab value="cURL">
+    ```bash
+    curl -X POST http://localhost:3001/api/v1/auth/send-verification-otp \
+      -H "Content-Type: application/json" \
+      -d '{ "email": "jane@example.com" }'
+    ```
+  </Tab>
+  <Tab value="JavaScript">
+    ```js
+    await fetch('/api/v1/auth/send-verification-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'jane@example.com' }),
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `400` | `bad_request` | Invalid email format |
+| `401` | `unauthorized` | User not found or not active |
+
+---
+
+## Verify Email
+
+Submit the 6-digit OTP to verify an email address.
+
+```
+POST /api/v1/auth/verify-email
+```
+
+### Request Body
+
+<TypeTable
+  type={{
+    email: {
+      type: 'string',
+      description: 'The email address being verified.',
+      required: true,
+    },
+    otp: {
+      type: 'string',
+      description: 'The 6-digit OTP code received via email.',
+      required: true,
+    },
+  }}
+/>
+
+### Response
+
+```json title="Response — 200 OK"
+{
+  "verified": true
+}
+```
+
+### Example
+
+<Tabs items={['cURL', 'JavaScript']}>
+  <Tab value="cURL">
+    ```bash
+    curl -X POST http://localhost:3001/api/v1/auth/verify-email \
+      -H "Content-Type: application/json" \
+      -d '{
+        "email": "jane@example.com",
+        "otp": "482937"
+      }'
+    ```
+  </Tab>
+  <Tab value="JavaScript">
+    ```js
+    const res = await fetch('/api/v1/auth/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'jane@example.com',
+        otp: '482937',
+      }),
+    });
+
+    const { verified } = await res.json();
+    ```
+  </Tab>
+</Tabs>
+
+### Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `400` | `bad_request` | Invalid OTP, expired OTP, already consumed, or max attempts exceeded |
