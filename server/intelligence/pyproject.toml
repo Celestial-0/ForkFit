@@ -1,0 +1,19 @@
+[project]
+name = "intelligence"
+version = "0.1.0"
+description = "ForkFit AI Intelligence Service — LangGraph-powered nutrition planning"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "grpcio>=1.81.0",
+    "grpcio-tools>=1.81.0",
+    "httpx>=0.28.1",
+    "langchain-core>=1.4.3",
+    "langchain-ollama>=1.1.0",
+    "langgraph>=1.2.4",
+    "protobuf>=6.33.6",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.1",
+    "structlog>=26.1.0",
+]

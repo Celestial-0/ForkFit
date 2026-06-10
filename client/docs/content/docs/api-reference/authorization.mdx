@@ -1,0 +1,535 @@
+---
+title: Authorization (RBAC)
+description: Role-Based Access Control — manage roles, permissions, and user-role assignments.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+
+## Overview
+
+ForkFit implements a full **Role-Based Access Control (RBAC)** system. The permission model consists of three entities:
+
+- **Roles** — Named groupings (e.g., `admin`, `user`, `moderator`)
+- **Permissions** — Resource + action pairs (e.g., `roles:read`, `user_roles:manage`)
+- **Assignments** — Linking users to roles, and permissions to roles
+
+<Callout type="warn" title="Admin Required">
+  All authorization endpoints require the authenticated user to have the appropriate permission. The `admin` role is seeded with all necessary permissions by default.
+</Callout>
+
+### Permission Model
+
+```
+User ──► user_roles ──► Role ──► role_permissions ──► Permission
+                                                        ├── resource
+                                                        └── action
+```
+
+### Default Permissions (Admin Role)
+
+| Resource | Action | Description |
+|---|---|---|
+| `roles` | `read` | List all roles |
+| `roles` | `create` | Create new roles |
+| `permissions` | `read` | List all permissions |
+| `permissions` | `create` | Create new permissions |
+| `role_permissions` | `manage` | Assign/remove permissions from roles |
+| `user_roles` | `manage` | Assign/remove roles from users |
+
+---
+
+## Roles
+
+### List Roles
+
+List all roles in the system.
+
+```
+GET /api/v1/roles
+```
+
+**Required Permission:** `roles:read`
+
+#### Response
+
+Returns an array of role objects:
+
+<TypeTable
+  type={{
+    id: {
+      type: 'UUID',
+      description: 'Unique role identifier.',
+      required: true,
+    },
+    name: {
+      type: 'string',
+      description: 'Role name (lowercase, unique).',
+      required: true,
+    },
+    description: {
+      type: 'string | null',
+      description: 'Human-readable description of the role.',
+    },
+    created_at: {
+      type: 'DateTime<Utc>',
+      description: 'When the role was created.',
+      required: true,
+    },
+  }}
+/>
+
+#### Example
+
+<Tabs items={['cURL', 'JavaScript']}>
+  <Tab value="cURL">
+    ```bash
+    curl http://localhost:3001/api/v1/roles \
+      -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+    ```
+  </Tab>
+  <Tab value="JavaScript">
+    ```js
+    const res = await fetch('/api/v1/roles', {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const roles = await res.json();
+    ```
+  </Tab>
+</Tabs>
+
+```json title="Response — 200 OK"
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "admin",
+    "description": "Full platform administrator",
+    "created_at": "2026-06-07T19:23:00Z"
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440001",
+    "name": "user",
+    "description": "Default application user",
+    "created_at": "2026-06-07T19:23:00Z"
+  }
+]
+```
+
+#### Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `401` | `unauthorized` | Missing or invalid authentication |
+| `403` | `forbidden` | User lacks `roles:read` permission |
+
+---
+
+### Create Role
+
+Create a new role or update its description if it already exists (upsert).
+
+```
+POST /api/v1/roles
+```
+
+**Required Permission:** `roles:create`
+
+#### Request Body
+
+<TypeTable
+  type={{
+    name: {
+      type: 'string',
+      description: 'Role name. Will be trimmed and lowercased. Must not be empty.',
+      required: true,
+    },
+    description: {
+      type: 'string | null',
+      description: 'Optional description for the role.',
+    },
+  }}
+/>
+
+#### Response
+
+Returns the created/updated role object.
+
+#### Example
+
+<Tabs items={['cURL', 'JavaScript']}>
+  <Tab value="cURL">
+    ```bash
+    curl -X POST http://localhost:3001/api/v1/roles \
+      -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "moderator",
+        "description": "Community moderator with limited admin access"
+      }'
+    ```
+  </Tab>
+  <Tab value="JavaScript">
+    ```js
+    const res = await fetch('/api/v1/roles', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: 'moderator',
+        description: 'Community moderator with limited admin access',
+      }),
+    });
+    const role = await res.json();
+    ```
+  </Tab>
+</Tabs>
+
+#### Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `400` | `bad_request` | Role name is empty |
+| `401` | `unauthorized` | Missing or invalid authentication |
+| `403` | `forbidden` | User lacks `roles:create` permission |
+
+---
+
+## Permissions
+
+### List Permissions
+
+List all permissions in the system, ordered by resource and action.
+
+```
+GET /api/v1/permissions
+```
+
+**Required Permission:** `permissions:read`
+
+#### Response
+
+Returns an array of permission objects:
+
+<TypeTable
+  type={{
+    id: {
+      type: 'UUID',
+      description: 'Unique permission identifier.',
+      required: true,
+    },
+    resource: {
+      type: 'string',
+      description: 'The resource this permission applies to (e.g., "roles", "permissions").',
+      required: true,
+    },
+    action: {
+      type: 'string',
+      description: 'The action allowed on the resource (e.g., "read", "create", "manage").',
+      required: true,
+    },
+    created_at: {
+      type: 'DateTime<Utc>',
+      description: 'When the permission was created.',
+      required: true,
+    },
+  }}
+/>
+
+#### Example
+
+<Tabs items={['cURL', 'JavaScript']}>
+  <Tab value="cURL">
+    ```bash
+    curl http://localhost:3001/api/v1/permissions \
+      -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+    ```
+  </Tab>
+  <Tab value="JavaScript">
+    ```js
+    const res = await fetch('/api/v1/permissions', {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const permissions = await res.json();
+    ```
+  </Tab>
+</Tabs>
+
+```json title="Response — 200 OK"
+[
+  {
+    "id": "770e8400-e29b-41d4-a716-446655440002",
+    "resource": "permissions",
+    "action": "create",
+    "created_at": "2026-06-07T19:23:00Z"
+  },
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440003",
+    "resource": "permissions",
+    "action": "read",
+    "created_at": "2026-06-07T19:23:00Z"
+  },
+  {
+    "id": "990e8400-e29b-41d4-a716-446655440004",
+    "resource": "roles",
+    "action": "create",
+    "created_at": "2026-06-07T19:23:00Z"
+  }
+]
+```
+
+---
+
+### Create Permission
+
+Create a new permission or return the existing one if it already exists (upsert).
+
+```
+POST /api/v1/permissions
+```
+
+**Required Permission:** `permissions:create`
+
+#### Request Body
+
+<TypeTable
+  type={{
+    resource: {
+      type: 'string',
+      description: 'The resource name. Will be trimmed and lowercased. Must not be empty.',
+      required: true,
+    },
+    action: {
+      type: 'string',
+      description: 'The action name. Will be trimmed and lowercased. Must not be empty.',
+      required: true,
+    },
+  }}
+/>
+
+#### Example
+
+<Tabs items={['cURL', 'JavaScript']}>
+  <Tab value="cURL">
+    ```bash
+    curl -X POST http://localhost:3001/api/v1/permissions \
+      -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "resource": "workouts",
+        "action": "delete"
+      }'
+    ```
+  </Tab>
+  <Tab value="JavaScript">
+    ```js
+    const res = await fetch('/api/v1/permissions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        resource: 'workouts',
+        action: 'delete',
+      }),
+    });
+    const permission = await res.json();
+    ```
+  </Tab>
+</Tabs>
+
+#### Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `400` | `bad_request` | Resource or action name is empty |
+| `403` | `forbidden` | User lacks `permissions:create` permission |
+
+---
+
+## Role-Permission Assignments
+
+### Assign Permission to Role
+
+Grant a permission to a role. Uses `ON CONFLICT DO NOTHING` for idempotency.
+
+```
+POST /api/v1/roles/{role_id}/permissions/{permission_id}
+```
+
+**Required Permission:** `role_permissions:manage`
+
+#### Path Parameters
+
+<TypeTable
+  type={{
+    role_id: {
+      type: 'UUID',
+      description: 'The ID of the role to assign the permission to.',
+      required: true,
+    },
+    permission_id: {
+      type: 'UUID',
+      description: 'The ID of the permission to assign.',
+      required: true,
+    },
+  }}
+/>
+
+#### Response
+
+```json title="Response — 200 OK"
+{
+  "assigned": true
+}
+```
+
+#### Example
+
+```bash
+curl -X POST http://localhost:3001/api/v1/roles/550e8400.../permissions/770e8400... \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+---
+
+### Remove Permission from Role
+
+Remove a permission from a role.
+
+```
+DELETE /api/v1/roles/{role_id}/permissions/{permission_id}
+```
+
+**Required Permission:** `role_permissions:manage`
+
+#### Path Parameters
+
+<TypeTable
+  type={{
+    role_id: {
+      type: 'UUID',
+      description: 'The ID of the role.',
+      required: true,
+    },
+    permission_id: {
+      type: 'UUID',
+      description: 'The ID of the permission to remove.',
+      required: true,
+    },
+  }}
+/>
+
+#### Response
+
+```json title="Response — 200 OK"
+{
+  "removed": true
+}
+```
+
+---
+
+## User-Role Assignments
+
+### Assign Role to User
+
+Assign a role to a user. Uses `ON CONFLICT DO NOTHING` for idempotency.
+
+```
+POST /api/v1/users/{user_id}/roles/{role_id}
+```
+
+**Required Permission:** `user_roles:manage`
+
+#### Path Parameters
+
+<TypeTable
+  type={{
+    user_id: {
+      type: 'UUID',
+      description: 'The ID of the user to assign the role to.',
+      required: true,
+    },
+    role_id: {
+      type: 'UUID',
+      description: 'The ID of the role to assign.',
+      required: true,
+    },
+  }}
+/>
+
+#### Response
+
+```json title="Response — 200 OK"
+{
+  "assigned": true
+}
+```
+
+#### Example
+
+<Tabs items={['cURL', 'JavaScript']}>
+  <Tab value="cURL">
+    ```bash
+    curl -X POST http://localhost:3001/api/v1/users/550e8400.../roles/660e8400... \
+      -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+    ```
+  </Tab>
+  <Tab value="JavaScript">
+    ```js
+    await fetch(`/api/v1/users/${userId}/roles/${roleId}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### Remove Role from User
+
+Remove a role from a user.
+
+```
+DELETE /api/v1/users/{user_id}/roles/{role_id}
+```
+
+**Required Permission:** `user_roles:manage`
+
+#### Path Parameters
+
+<TypeTable
+  type={{
+    user_id: {
+      type: 'UUID',
+      description: 'The ID of the user.',
+      required: true,
+    },
+    role_id: {
+      type: 'UUID',
+      description: 'The ID of the role to remove.',
+      required: true,
+    },
+  }}
+/>
+
+#### Response
+
+```json title="Response — 200 OK"
+{
+  "removed": true
+}
+```
+
+#### Errors (all assignment endpoints)
+
+| Status | Code | Cause |
+|---|---|---|
+| `401` | `unauthorized` | Missing or invalid authentication |
+| `403` | `forbidden` | User lacks the required manage permission |

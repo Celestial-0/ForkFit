@@ -1,0 +1,23 @@
+{
+  "name": "client",
+  "private": true,
+  "workspaces": [
+    "docs",
+    "web"
+  ],
+  "type": "module",
+  "dependencies": {},
+  "devDependencies": {
+    "turbo": "^2.9.16",
+    "@types/bun": "latest"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "peerDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "packageManager": "bun@1.3.10"
+}

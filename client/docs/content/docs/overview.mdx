@@ -1,0 +1,221 @@
+---
+title: Overview
+description: Get up and running with the ForkFit API — environment setup, configuration, and your first request.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+## Base URL
+
+All API endpoints are served under the `/api/v1` prefix. The server also exposes a health check at the root level.
+
+```
+GET /health → "ok"
+GET /api/v1/auth/signup
+GET /api/v1/auth/signin
+...
+```
+
+## Rate Limiting
+
+The API applies a global rate limit using [Tower Governor](https://github.com/benwis/tower-governor):
+
+- **Rate:** 1 request per second (sustained)
+- **Burst:** Up to 120 requests
+
+<Callout type="warn" title="Rate Limited">
+  When you exceed the rate limit, the server returns a `429 Too Many Requests` response. Back off and retry with exponential delay.
+</Callout>
+
+## Environment Configuration
+
+The API reads configuration from environment variables. Copy `.env.example` to `.env` and fill in your values:
+
+<TypeTable
+  type={{
+    POSTGRES_DB: {
+      type: 'string',
+      description: 'PostgreSQL database name.',
+      default: 'forkfit',
+      required: true,
+    },
+    POSTGRES_USER: {
+      type: 'string',
+      description: 'PostgreSQL username.',
+      required: true,
+    },
+    POSTGRES_PASSWORD: {
+      type: 'string',
+      description: 'PostgreSQL password.',
+      required: true,
+    },
+    POSTGRES_HOST: {
+      type: 'string',
+      description: 'PostgreSQL host address.',
+      default: 'localhost',
+    },
+    POSTGRES_PORT: {
+      type: 'string',
+      description: 'PostgreSQL port.',
+      default: '5432',
+    },
+    DATABASE_URL: {
+      type: 'string',
+      description: 'Full PostgreSQL connection string. If provided, overrides individual POSTGRES_* variables.',
+    },
+    REDIS_HOST: {
+      type: 'string',
+      description: 'Redis server hostname.',
+      default: 'localhost',
+    },
+    REDIS_PORT: {
+      type: 'string',
+      description: 'Redis server port.',
+      default: '6379',
+    },
+    REDIS_PASSWORD: {
+      type: 'string',
+      description: 'Redis password. Leave empty for no authentication.',
+    },
+    GOOGLE_CLIENT_ID: {
+      type: 'string',
+      description: 'Google OAuth 2.0 client ID.',
+      required: true,
+    },
+    GOOGLE_CLIENT_SECRET: {
+      type: 'string',
+      description: 'Google OAuth 2.0 client secret.',
+      required: true,
+    },
+    GITHUB_CLIENT_ID: {
+      type: 'string',
+      description: 'GitHub OAuth client ID.',
+      required: true,
+    },
+    GITHUB_CLIENT_SECRET: {
+      type: 'string',
+      description: 'GitHub OAuth client secret.',
+      required: true,
+    },
+    API_BIND_ADDR: {
+      type: 'SocketAddr',
+      description: 'Address and port the API server binds to.',
+      default: '127.0.0.1:3001',
+    },
+    ADMIN_EMAIL: {
+      type: 'string',
+      description: 'Email address that automatically receives the admin role on startup.',
+    },
+    SESSION_TTL_SECONDS: {
+      type: 'u64',
+      description: 'Session token lifetime in seconds.',
+      default: '2592000 (30 days)',
+    },
+    OTP_TTL_SECONDS: {
+      type: 'u64',
+      description: 'OTP code lifetime in seconds.',
+      default: '600 (10 minutes)',
+    },
+    OTP_MAX_ATTEMPTS: {
+      type: 'i32',
+      description: 'Maximum number of OTP verification attempts before the code is invalidated.',
+      default: '5',
+    },
+  }}
+/>
+
+## Quick Start
+
+<Steps>
+  <Step>
+
+    ### Set up your environment
+
+    Clone the repository and configure environment variables:
+
+    ```bash title=".env"
+    POSTGRES_DB=forkfit
+    POSTGRES_USER=your_user
+    POSTGRES_PASSWORD=your_password
+    REDIS_HOST=localhost
+    REDIS_PORT=6379
+    GOOGLE_CLIENT_ID=your-google-client-id
+    GOOGLE_CLIENT_SECRET=your-google-client-secret
+    GITHUB_CLIENT_ID=your-github-client-id
+    GITHUB_CLIENT_SECRET=your-github-client-secret
+    ```
+
+  </Step>
+  <Step>
+
+    ### Start the server
+
+    ```bash
+    cargo run
+    ```
+
+    The server will automatically run database migrations and seed default roles/permissions on startup.
+
+  </Step>
+  <Step>
+
+    ### Verify the server is running
+
+    ```bash
+    curl http://localhost:3001/health
+    # → ok
+    ```
+
+  </Step>
+  <Step>
+
+    ### Create your first account
+
+    <Tabs items={['cURL', 'JavaScript']}>
+      <Tab value="cURL">
+        ```bash
+        curl -X POST http://localhost:3001/api/v1/auth/signup \
+          -H "Content-Type: application/json" \
+          -d '{
+            "email": "user@example.com",
+            "password": "securepassword123",
+            "full_name": "John Doe"
+          }'
+        ```
+      </Tab>
+      <Tab value="JavaScript">
+        ```js
+        const response = await fetch('http://localhost:3001/api/v1/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'user@example.com',
+            password: 'securepassword123',
+            full_name: 'John Doe',
+          }),
+        });
+
+        const data = await response.json();
+        console.log(data.access_token);
+        ```
+      </Tab>
+    </Tabs>
+
+  </Step>
+</Steps>
+
+## Database Seeding
+
+On startup the server automatically:
+
+1. Creates an **admin** role with description "Full platform administrator"
+2. Creates a **user** role with description "Default application user"
+3. Seeds default permissions for the admin role:
+   - `roles:read`, `roles:create`
+   - `role_permissions:manage`
+   - `permissions:read`, `permissions:create`
+   - `user_roles:manage`
+4. If `ADMIN_EMAIL` is set and that user exists, assigns the admin role to them

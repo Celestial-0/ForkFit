@@ -1,0 +1,58 @@
+---
+title: Welcome to ForkFit
+description: The complete developer documentation and API reference for the ForkFit platform.
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Welcome to ForkFit
+
+Welcome to the ForkFit developer documentation! ForkFit provides a secure, robust, and highly scalable API for user authentication, session control, OAuth integrations, and fine-grained Role-Based Access Control (RBAC).
+
+Whether you are integrating login capabilities, managing user roles, or securing backend services, this documentation will guide you through the setup, configuration, and API consumption.
+
+---
+
+## Getting Started
+
+Select a path below to start exploring the capabilities of the ForkFit platform.
+
+<Cards>
+  <Card
+    title="Overview & Quick Start"
+    description="Learn how to configure your environment, run database migrations, and execute your first API request."
+    href="/docs/overview"
+  />
+  <Card
+    title="Authentication Model"
+    description="Dive deep into our session-based auth system using Bearer tokens, token format details, and session lifecycles."
+    href="/docs/authentication"
+  />
+  <Card
+    title="API Reference"
+    description="Detailed endpoints specification including authentication, user profiles, session revocation, and security."
+    href="/docs/api-reference/signup-signin"
+  />
+  <Card
+    title="Role-Based Access Control"
+    description="Understand the RBAC security layers, roles, permissions seeding, and how to manage access control."
+    href="/docs/api-reference/authorization"
+  />
+</Cards>
+
+---
+
+## Core Features
+
+Our platform is designed with security and developer experience at its core:
+
+* **OAuth 2.0 Integration**: Built-in support for Google and GitHub authentication.
+* **Secure Session Control**: Comprehensive tools to list, inspect, and revoke active device sessions.
+* **OTP Verification**: Multi-layered security using time-sensitive One-Time Passwords for email verification and password resets.
+* **Granular RBAC**: Fully customizable roles and permission mappings to enforce precise access levels across endpoints.
+* **Rate Limiting**: Built-in protection against DDoS and abuse using token bucket algorithm controls.
+
+<Callout type="info" title="Looking for Client SDKs?">
+  Official SDKs for JavaScript/TypeScript, Python, and Go are currently in development. For now, you can use standard HTTP client libraries (like `axios`, `fetch`, or `requests`) to interact with the raw HTTP API.
+</Callout>

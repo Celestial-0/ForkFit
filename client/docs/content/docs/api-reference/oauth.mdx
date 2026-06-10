@@ -1,0 +1,227 @@
+---
+title: OAuth Authentication
+description: Authenticate users via Google or GitHub OAuth 2.0 providers.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
+## Supported Providers
+
+<Cards>
+  <Card
+    title="Google"
+    description="Sign in with Google accounts using OAuth 2.0. Scopes: userinfo.email, userinfo.profile"
+  />
+  <Card
+    title="GitHub"
+    description="Sign in with GitHub accounts. Scope: user:email"
+  />
+</Cards>
+
+## OAuth Flow
+
+<Steps>
+  <Step>
+
+    ### Redirect to Provider
+
+    Your client redirects the user to the authorize endpoint. The server constructs the OAuth URL and issues a `302 Redirect` to the provider's consent screen.
+
+    ```
+    GET /api/v1/auth/oauth/{provider}/authorize
+    ```
+
+  </Step>
+  <Step>
+
+    ### User Grants Consent
+
+    The user authenticates with the OAuth provider and grants permission to share their email and profile.
+
+  </Step>
+  <Step>
+
+    ### Provider Callback
+
+    The provider redirects back to the ForkFit API callback endpoint with an authorization `code` and `state` parameter.
+
+    ```
+    GET /api/v1/auth/oauth/{provider}/callback?code=...&state=...
+    ```
+
+  </Step>
+  <Step>
+
+    ### Session Created
+
+    The server exchanges the code for an access token, fetches user info from the provider, and either links to an existing account or creates a new one. A session token is returned.
+
+  </Step>
+</Steps>
+
+---
+
+## Authorize
+
+Initiates the OAuth flow by redirecting the user to the provider's consent screen.
+
+```
+GET /api/v1/auth/oauth/{provider}/authorize
+```
+
+### Path Parameters
+
+<TypeTable
+  type={{
+    provider: {
+      type: '"google" | "github"',
+      description: 'The OAuth provider to authenticate with. Case-insensitive.',
+      required: true,
+    },
+  }}
+/>
+
+### Behavior
+
+- Returns a **302 Redirect** to the OAuth provider's authorization URL
+- The redirect URL is constructed with appropriate scopes:
+  - **Google:** `userinfo.email` + `userinfo.profile`
+  - **GitHub:** `user:email`
+- The callback URL is automatically set to: `http://{bind_addr}/api/v1/auth/oauth/{provider}/callback`
+
+### Example
+
+```bash
+# Open in browser or redirect your frontend:
+curl -v http://localhost:3001/api/v1/auth/oauth/google/authorize
+
+# Response: 302 redirect to:
+# https://accounts.google.com/o/oauth2/v2/auth?client_id=...&scope=...&redirect_uri=...
+```
+
+### Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `400` | `bad_request` | Unsupported OAuth provider (anything other than `google` or `github`) |
+
+---
+
+## Callback
+
+Handles the OAuth provider's redirect after user consent. Exchanges the authorization code for an access token, fetches user info, and creates or links the account.
+
+```
+GET /api/v1/auth/oauth/{provider}/callback
+```
+
+### Path Parameters
+
+<TypeTable
+  type={{
+    provider: {
+      type: '"google" | "github"',
+      description: 'The OAuth provider. Must match the one used in the authorize step.',
+      required: true,
+    },
+  }}
+/>
+
+### Query Parameters
+
+<TypeTable
+  type={{
+    code: {
+      type: 'string',
+      description: 'The authorization code provided by the OAuth provider.',
+      required: true,
+    },
+    state: {
+      type: 'string',
+      description: 'The CSRF state parameter from the authorize request.',
+      required: true,
+    },
+  }}
+/>
+
+### Account Resolution
+
+The callback follows this logic to resolve the user account:
+
+1. **Existing OAuth link?** — If an `oauth_accounts` record exists for this provider + provider user ID, sign in as that user
+2. **Existing user by email?** — If a user with the same email already exists, link the OAuth account and sign in
+3. **New user** — Create a new user with:
+   - Email verified set to `true` (since the provider verified it)
+   - Default profile, preferences, and settings
+   - OAuth account record linked
+
+<Callout type="info" title="Automatic Email Verification">
+  Users created via OAuth have `email_verified` set to `true` by default, since the OAuth provider has already verified their email address.
+</Callout>
+
+### Response
+
+Returns the same `AuthResponse` format as the standard sign-in:
+
+```json title="Response — 200 OK"
+{
+  "access_token": "ff_a1b2c3d4..._e5f6g7h8..._i9j0k1l2...",
+  "token_type": "Bearer",
+  "expires_at": "2026-07-07T19:23:00Z",
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "jane@example.com",
+    "email_verified": true,
+    "status": "active",
+    "created_at": "2026-06-07T19:23:00Z",
+    "updated_at": "2026-06-07T19:23:00Z"
+  }
+}
+```
+
+### Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `400` | `bad_request` | Token exchange failed, unsupported provider, or unable to fetch user info |
+
+---
+
+## GitHub Email Fallback
+
+<Callout type="info" title="GitHub Private Emails">
+  If the GitHub user's primary email is private (the `email` field is null on the user profile), the server automatically fetches the user's email list from `GET /user/emails` and uses the primary email.
+</Callout>
+
+## Environment Variables
+
+Make sure the following environment variables are configured for OAuth to work:
+
+<TypeTable
+  type={{
+    GOOGLE_CLIENT_ID: {
+      type: 'string',
+      description: 'Google OAuth 2.0 client ID from the Google Cloud Console.',
+      required: true,
+    },
+    GOOGLE_CLIENT_SECRET: {
+      type: 'string',
+      description: 'Google OAuth 2.0 client secret.',
+      required: true,
+    },
+    GITHUB_CLIENT_ID: {
+      type: 'string',
+      description: 'GitHub OAuth App client ID from GitHub Developer Settings.',
+      required: true,
+    },
+    GITHUB_CLIENT_SECRET: {
+      type: 'string',
+      description: 'GitHub OAuth App client secret.',
+      required: true,
+    },
+  }}
+/>
