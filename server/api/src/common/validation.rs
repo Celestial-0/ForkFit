@@ -32,4 +32,12 @@ mod tests {
         assert!(validate_password("long-enough").is_ok());
         assert!(validate_password("short").is_err());
     }
+
+    #[test]
+    fn validates_email_normalization() {
+        assert_eq!(normalize_email("  TEST@example.com  ").unwrap(), "test@example.com");
+        assert!(normalize_email("not-an-email").is_err());
+        assert!(normalize_email("@example.com").is_err());
+        assert!(normalize_email("test@").is_err());
+    }
 }

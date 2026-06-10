@@ -17,7 +17,7 @@ use crate::{
     user::{User, UserResponse},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, FromRow)]
 pub struct CurrentUser {
     pub id: UserId,
     pub session_id: SessionId,
@@ -65,6 +65,19 @@ impl FromRequestParts<Arc<AppState>> for CurrentUser {
         let token = bearer_token(parts)?;
         let token_hash = hash_secret(token);
 
+        // Check Redis cache first
+        if let Ok(Some(cached_user)) = crate::infra::redis::session_cache::get_cached_session(&state.redis, &token_hash).await {
+            let session_uuid = cached_user.session_id.0;
+            let db_clone = state.db.clone();
+            tokio::spawn(async move {
+                let _ = sqlx::query("UPDATE sessions SET last_seen_at = now() WHERE id = $1")
+                    .bind(session_uuid)
+                    .execute(&db_clone)
+                    .await;
+            });
+            return Ok(cached_user);
+        }
+
         let row = sqlx::query_as::<_, AuthSessionRow>(
             r#"
             SELECT
@@ -83,7 +96,7 @@ impl FromRequestParts<Arc<AppState>> for CurrentUser {
             WHERE sessions.token_hash = $1
             "#,
         )
-        .bind(token_hash)
+        .bind(token_hash.clone())
         .fetch_optional(&state.db)
         .await?
         .ok_or(AppError::Unauthorized)?;
@@ -102,7 +115,7 @@ impl FromRequestParts<Arc<AppState>> for CurrentUser {
             .execute(&state.db)
             .await?;
 
-        Ok(Self {
+        let current_user = Self {
             id: UserId(row.user_id),
             session_id: SessionId(row.session_id),
             email: row.email,
@@ -110,7 +123,26 @@ impl FromRequestParts<Arc<AppState>> for CurrentUser {
             status: row.status,
             created_at: row.created_at,
             updated_at: row.updated_at,
-        })
+        };
+
+        // Cache the session in Redis (aligning TTL with session expiry)
+        let ttl_secs = if row.expires_at > now {
+            (row.expires_at - now).num_seconds() as u64
+        } else {
+            0
+        };
+        if ttl_secs > 0 {
+            let _ = crate::infra::redis::session_cache::set_cached_session(
+                &state.redis,
+                &token_hash,
+                row.session_id,
+                &current_user,
+                ttl_secs,
+            )
+            .await;
+        }
+
+        Ok(current_user)
     }
 }
 

@@ -32,6 +32,8 @@ pub enum AppError {
     Tonic(#[from] tonic::transport::Error),
     #[error("grpc service error: {0}")]
     TonicStatus(#[from] tonic::Status),
+    #[error("internal error: {0}")]
+    Internal(String),
 }
 
 #[derive(Serialize)]
@@ -61,7 +63,8 @@ impl AppError {
                 tonic::Code::AlreadyExists => StatusCode::CONFLICT,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
-            Self::Sqlx(_)
+            Self::Internal(_)
+            | Self::Sqlx(_)
             | Self::Migration(_)
             | Self::Bcrypt(_)
             | Self::Config(_)
@@ -82,6 +85,7 @@ impl AppError {
             Self::Bcrypt(_) => "password_error",
             Self::Config(_) => "configuration_error",
             Self::Redis(_) => "redis_error",
+            Self::Internal(_) => "internal_error",
             Self::Tonic(_) => "grpc_connection_error",
             Self::TonicStatus(status) => match status.code() {
                 tonic::Code::InvalidArgument => "bad_request",

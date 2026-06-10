@@ -9,11 +9,11 @@ def run_codegen():
     # Run the grpcio-tools protoc compiler
     subprocess.check_call([
         sys.executable, "-m", "grpc_tools.protoc",
-        "-I../../proto/intelligence/v1",
+        "-I../proto/intelligence/v1",
         "--python_out=./src/generated",
         "--pyi_out=./src/generated",
         "--grpc_python_out=./src/generated",
-        "../../proto/intelligence/v1/intelligence.proto"
+        "../proto/intelligence/v1/intelligence.proto"
     ])
     
     # Fix import paths in compiled stubs

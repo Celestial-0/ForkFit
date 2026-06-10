@@ -349,6 +349,8 @@ pub async fn signout(
     State(state): State<Arc<AppState>>,
     user: CurrentUser,
 ) -> AppResult<Json<serde_json::Value>> {
+    crate::infra::redis::session_cache::invalidate_session_by_id(&state.redis, &state.db, user.session_id.0).await?;
+
     sqlx::query("UPDATE sessions SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL")
         .bind(user.session_id)
         .execute(&state.db)
@@ -361,6 +363,8 @@ pub async fn signout_all(
     State(state): State<Arc<AppState>>,
     user: CurrentUser,
 ) -> AppResult<Json<serde_json::Value>> {
+    crate::infra::redis::session_cache::invalidate_all_user_sessions(&state.redis, &state.db, user.id).await?;
+
     sqlx::query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL")
         .bind(user.id)
         .execute(&state.db)
@@ -435,6 +439,8 @@ pub async fn reset_password(
     .execute(&state.db)
     .await?;
 
+    crate::infra::redis::session_cache::invalidate_all_user_sessions(&state.redis, &state.db, crate::common::id::UserId(user.id)).await?;
+
     sqlx::query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL")
         .bind(user.id)
         .execute(&state.db)
@@ -472,6 +478,17 @@ pub async fn change_password(
     .bind(user.id)
     .execute(&state.db)
     .await?;
+
+    let session_ids = sqlx::query_scalar::<_, Uuid>(
+        "SELECT id FROM sessions WHERE user_id = $1 AND id <> $2 AND revoked_at IS NULL"
+    )
+    .bind(user.id.0)
+    .bind(user.session_id.0)
+    .fetch_all(&state.db)
+    .await?;
+    for sid in session_ids {
+        let _ = crate::infra::redis::session_cache::invalidate_session_by_id(&state.redis, &state.db, sid).await;
+    }
 
     sqlx::query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND id <> $2 AND revoked_at IS NULL")
         .bind(user.id)
@@ -518,6 +535,8 @@ pub async fn revoke_session(
     user: CurrentUser,
     Path(session_id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
+    crate::infra::redis::session_cache::invalidate_session_by_id(&state.redis, &state.db, session_id).await?;
+
     sqlx::query("UPDATE sessions SET revoked_at = now() WHERE id = $1 AND user_id = $2")
         .bind(session_id)
         .bind(user.id)
