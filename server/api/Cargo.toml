@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 axum = "0.8.9"
 tokio = { version = "1.52.3", features = ["full"] }
-tokio-stream = "0.1.18"
+tokio-stream = { version = "0.1.18", features = ["sync"] }
 
 
 prost = "0.14.4"
@@ -25,7 +25,10 @@ chrono = { version = "0.4.45", features = ["serde"]  }
 
 
 tracing = "0.1.44"
-tracing-subscriber = "0.3.23"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+opentelemetry = { version = "0.27.1" }
+opentelemetry_sdk = { version = "0.27.1", features = ["rt-tokio"] }
+tracing-opentelemetry = { version = "0.28.0" }
 
 
 sqlx = { version = "0.9.0", features = [
@@ -44,11 +47,11 @@ dotenvy = "0.15.7"
 
 bcrypt = "0.19.1"
 oauth2 = { version = "5.0.0", features = ["reqwest", "rustls-tls"] }
-reqwest = { version = "0.13.4", features = ["json"] }
+reqwest = { version = "0.13.4", features = ["json", "stream"] }
 redis = { version = "0.27.5", features = ["tokio-comp"] }
 rand = "0.10.1"
 lettre = { version = "0.11.22", default-features = false, features = ["tokio1-rustls-tls", "hostname", "builder", "smtp-transport"]  }
-ipnetwork = "0.21.1"
+ipnetwork = { version = "0.21.1", features = ["serde"] }
 
 
 tower = "0.5.3"

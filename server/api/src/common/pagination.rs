@@ -51,3 +51,41 @@ pub struct PaginatedResponse<T> {
     pub data: Vec<T>,
     pub meta: PaginationMeta,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pagination_defaults() {
+        let params = PaginationParams { page: None, per_page: None };
+        assert_eq!(params.page(), 1);
+        assert_eq!(params.per_page(), 10);
+        assert_eq!(params.offset(), 0);
+    }
+
+    #[test]
+    fn test_pagination_limits() {
+        let params = PaginationParams { page: Some(0), per_page: Some(0) };
+        assert_eq!(params.page(), 1);
+        assert_eq!(params.per_page(), 1);
+        assert_eq!(params.offset(), 0);
+
+        let params_large = PaginationParams { page: Some(5), per_page: Some(500) };
+        assert_eq!(params_large.page(), 5);
+        assert_eq!(params_large.per_page(), 100);
+        assert_eq!(params_large.offset(), 400);
+    }
+
+    #[test]
+    fn test_pagination_meta_calculation() {
+        let meta = PaginationMeta::new(1, 10, 25);
+        assert_eq!(meta.page, 1);
+        assert_eq!(meta.per_page, 10);
+        assert_eq!(meta.total, 25);
+        assert_eq!(meta.total_pages, 3);
+
+        let meta_empty = PaginationMeta::new(1, 10, 0);
+        assert_eq!(meta_empty.total_pages, 0);
+    }
+}

@@ -91,3 +91,38 @@ define_id!(ShoppingListId);
 define_id!(BiometricLogId);
 define_id!(WorkoutLogId);
 define_id!(GoalId);
+define_id!(FoodLogId);
+define_id!(MealPlanItemId);
+define_id!(PantryItemId);
+define_id!(ShoppingListItemId);
+define_id!(BackgroundJobId);
+define_id!(NotificationLogId);
+define_id!(AuditLogId);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_newtype_id_display() {
+        let uuid = Uuid::parse_str("67e55044-10b1-426f-9247-bb680e5fe0c8").unwrap();
+        let user_id = UserId(uuid);
+        assert_eq!(format!("{user_id}"), "67e55044-10b1-426f-9247-bb680e5fe0c8");
+    }
+
+    #[test]
+    fn test_newtype_id_default() {
+        let user_id = UserId::default();
+        assert_eq!(user_id.0, Uuid::nil());
+    }
+
+    #[test]
+    fn test_newtype_id_serde_round_trip() {
+        let uuid = Uuid::new_v4();
+        let user_id = UserId(uuid);
+        let serialized = serde_json::to_string(&user_id).unwrap();
+        let deserialized: UserId = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, user_id);
+    }
+}
+

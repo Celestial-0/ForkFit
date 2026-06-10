@@ -22,6 +22,7 @@ pub struct AppState {
     pub grpc: GrpcIntelligenceClient,
     pub config: Config,
     pub mailer: Mailer,
+    pub trace_channels: Arc<tokio::sync::Mutex<std::collections::HashMap<uuid::Uuid, tokio::sync::broadcast::Sender<crate::intelligence::stream::SseEvent>>>>,
 }
 
 pub async fn build_app(config: Config) -> AppResult<Router> {
@@ -50,12 +51,21 @@ pub async fn build_app(config: Config) -> AppResult<Router> {
     let grpc = GrpcIntelligenceClient::new().await?;
     tracing::info!("grpc_intelligence_client_connected");
 
+    let mailer = Mailer::new(&config);
+
     let state = Arc::new(AppState {
         db,
         redis,
         grpc,
         config,
-        mailer: Mailer::new(),
+        mailer,
+        trace_channels: Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new())),
+    });
+
+    // Spawn background worker
+    let runner_state = state.clone();
+    tokio::spawn(async move {
+        crate::background::runner::run_background_jobs(runner_state).await;
     });
 
     Ok(router(state))
@@ -91,24 +101,33 @@ mod tests {
         let redis = redis::Client::open("redis://localhost:6379").unwrap();
         let grpc = GrpcIntelligenceClient::new_lazy().unwrap();
 
+        let config = Config {
+            bind_addr: "127.0.0.1:3001".parse::<SocketAddr>().unwrap(),
+            database_url: "postgres://user:password@localhost/forkfit".into(),
+            redis_url: "redis://localhost:6379".into(),
+            google_client_id: "google-id".to_string(),
+            google_client_secret: "google-secret".to_string(),
+            github_client_id: "github-id".to_string(),
+            github_client_secret: "github-secret".to_string(),
+            admin_email: None,
+            session_ttl: Duration::from_secs(60),
+            otp_ttl: Duration::from_secs(60),
+            otp_max_attempts: 5,
+            smtp_host: None,
+            smtp_port: None,
+            smtp_user: None,
+            smtp_password: None,
+            smtp_from: None,
+        };
+        let mailer = Mailer::new(&config);
+
         let state = Arc::new(AppState {
             db,
             redis,
             grpc,
-            config: Config {
-                bind_addr: "127.0.0.1:3001".parse::<SocketAddr>().unwrap(),
-                database_url: "postgres://user:password@localhost/forkfit".into(),
-                redis_url: "redis://localhost:6379".into(),
-                google_client_id: "google-id".to_string(),
-                google_client_secret: "google-secret".to_string(),
-                github_client_id: "github-id".to_string(),
-                github_client_secret: "github-secret".to_string(),
-                admin_email: None,
-                session_ttl: Duration::from_secs(60),
-                otp_ttl: Duration::from_secs(60),
-                otp_max_attempts: 5,
-            },
-            mailer: Mailer::new(),
+            config,
+            mailer,
+            trace_channels: Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new())),
         });
 
         let _router = router(state);

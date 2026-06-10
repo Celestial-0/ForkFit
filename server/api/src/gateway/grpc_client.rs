@@ -9,6 +9,21 @@ pub mod intelligence {
 }
 
 use intelligence::intelligence_service_client::IntelligenceServiceClient;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
+use opentelemetry::propagation::TextMapPropagator;
+
+fn inject_trace_context<T>(request: &mut tonic::Request<T>) {
+    let context = tracing::Span::current().context();
+    let propagator = opentelemetry_sdk::propagation::TraceContextPropagator::new();
+    let mut fields = std::collections::HashMap::new();
+    propagator.inject_context(&context, &mut fields);
+    
+    if let Some(traceparent) = fields.get("traceparent") {
+        if let Ok(metadata_val) = traceparent.parse() {
+            request.metadata_mut().insert("traceparent", metadata_val);
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct GrpcIntelligenceClient {
@@ -58,7 +73,8 @@ impl GrpcIntelligenceClient {
         user_id: String,
     ) -> AppResult<intelligence::IntentResponse> {
         let mut client = self.client.clone();
-        let request = tonic::Request::new(intelligence::IntentRequest { prompt, user_id });
+        let mut request = tonic::Request::new(intelligence::IntentRequest { prompt, user_id });
+        inject_trace_context(&mut request);
         
         let response = client.process_intent(request).await.map_err(|status| {
             AppError::BadRequest(format!("gRPC ProcessIntent failed: {}", status.message()))
@@ -77,14 +93,15 @@ impl GrpcIntelligenceClient {
         history: Vec<intelligence::ChatMessageHistory>,
     ) -> AppResult<tonic::Streaming<intelligence::OrchestrateGraphResponse>> {
         let mut client = self.client.clone();
-        let request = tonic::Request::new(intelligence::OrchestrateGraphRequest {
+        let mut request = tonic::Request::new(intelligence::OrchestrateGraphRequest {
             trace_id,
             session_id,
             prompt,
             context: Some(context),
             history,
         });
-
+        inject_trace_context(&mut request);
+ 
         let response = client.orchestrate_agent_graph(request).await.map_err(|status| {
             AppError::BadRequest(format!("gRPC OrchestrateAgentGraph failed: {}", status.message()))
         })?;
@@ -102,14 +119,15 @@ impl GrpcIntelligenceClient {
         feedback_text: String,
     ) -> AppResult<intelligence::ReflectionResponse> {
         let mut client = self.client.clone();
-        let request = tonic::Request::new(intelligence::ReflectionRequest {
+        let mut request = tonic::Request::new(intelligence::ReflectionRequest {
             user_id,
             session_id,
             chat_message_id,
             feedback_rating,
             feedback_text,
         });
-
+        inject_trace_context(&mut request);
+ 
         let response = client.trigger_reflection(request).await.map_err(|status| {
             AppError::BadRequest(format!("gRPC TriggerReflection failed: {}", status.message()))
         })?;

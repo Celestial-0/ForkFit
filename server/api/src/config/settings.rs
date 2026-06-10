@@ -15,6 +15,11 @@ pub struct Config {
     pub session_ttl: Duration,
     pub otp_ttl: Duration,
     pub otp_max_attempts: i32,
+    pub smtp_host: Option<String>,
+    pub smtp_port: Option<u16>,
+    pub smtp_user: Option<String>,
+    pub smtp_password: Option<String>,
+    pub smtp_from: Option<String>,
 }
 
 #[derive(Debug, Error)]
@@ -67,6 +72,11 @@ impl Config {
             session_ttl: Duration::from_secs(env_u64("SESSION_TTL_SECONDS", 60 * 60 * 24 * 30)),
             otp_ttl: Duration::from_secs(env_u64("OTP_TTL_SECONDS", 60 * 10)),
             otp_max_attempts: env_i32("OTP_MAX_ATTEMPTS", 5),
+            smtp_host: env::var("SMTP_HOST").ok().filter(|s| !s.trim().is_empty()),
+            smtp_port: env::var("SMTP_PORT").ok().and_then(|s| s.parse().ok()),
+            smtp_user: env::var("SMTP_USER").ok().filter(|s| !s.trim().is_empty()),
+            smtp_password: env::var("SMTP_PASSWORD").ok().filter(|s| !s.trim().is_empty()),
+            smtp_from: env::var("SMTP_FROM").ok().filter(|s| !s.trim().is_empty()),
         })
     }
 }
