@@ -2,12 +2,7 @@
   "title": "Documentation",
   "pages": [
     "index",
-    "---Getting Started---",
     "overview",
-    "authentication",
-    "---API Reference---",
-    "api-reference",
-    "---Guides---",
-    "error-handling"
+    "server"
   ]
 }

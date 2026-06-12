@@ -2,6 +2,14 @@
   "title": "API",
   "pages": [
     "index",
-    "endpoints"
+    "endpoints",
+    "signup-signin",
+    "authorization",
+    "profile",
+    "recipes",
+    "plans",
+    "chat",
+    "intelligence",
+    "admin"
   ]
 }
