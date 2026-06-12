@@ -1,0 +1,87 @@
+---
+title: Database Schema
+description: PostgreSQL relational schema and migrations structure for the ForkFit database.
+---
+
+# Database Schema
+
+ForkFit utilizes **PostgreSQL** as its core transactional datastore. Schema migrations are managed sequentially and executed automatically on server startup.
+
+---
+
+## Migration Steps
+
+Migrations are located in `server/db/migrations/` and cover the following schema namespaces:
+
+<Steps>
+  <Step>
+    ### Identity & Access Management (00001_create_iam.sql)
+    Sets up users, sessions, roles, permissions, and roles-to-permissions mapping tables.
+  </Step>
+  <Step>
+    ### Profiles & Biometrics (00002_create_profiles_and_biometrics.sql)
+    Defines user profiles, preferences, medical safety audits, biometric logs (weight, height, body fat), workout logs, and goals.
+  </Step>
+  <Step>
+    ### Recipes & Nutrition (00003_create_recipes_and_nutrition.sql)
+    Configures ingredients, custom recipes, ingredients-to-recipes mapping, and user food logs.
+  </Step>
+  <Step>
+    ### Planning & Shopping (00004_create_planning_and_shopping.sql)
+    Sets up active meal plans, individual meal plan items, pantry items, and shopping lists.
+  </Step>
+  <Step>
+    ### Chat & Feedback (00005_create_chat_and_feedback.sql)
+    Defines chat threads, message records, and system feedback.
+  </Step>
+  <Step>
+    ### AI Orchestration & Memory (00006_create_ai_orchestration_and_memory.sql)
+    Supports LangGraph trace steps, agent execution statuses, and semantic user preferences (memories).
+  </Step>
+  <Step>
+    ### Background Jobs & Notifications (00007_create_background_jobs_and_notifications.sql)
+    Queues background tasks and stores transactional mail logs.
+  </Step>
+  <Step>
+    ### System Audits & Indices (00008_create_audit_logs_and_indexing.sql)
+    Governs user-action audit logs and registers performant indexes on search fields.
+  </Step>
+</Steps>
+
+---
+
+## Entity-Relationship Overview
+
+Here is a simplified diagram of how the primary tables connect:
+
+```mermaid
+erDiagram
+    users ||--o{ user_sessions : "has sessions"
+    users ||--|| user_profiles : "has profile"
+    users ||--o{ biometric_logs : "logs biometrics"
+    users ||--o{ user_goals : "sets goals"
+    users ||--o{ food_logs : "records food"
+    users ||--o{ meal_plans : "selects plans"
+    users ||--o{ chat_threads : "chats in"
+    user_profiles ||--o{ medical_safety : "assesses safety"
+    recipes ||--o{ recipe_ingredients : "contains"
+    ingredients ||--o{ recipe_ingredients : "used in"
+    meal_plans ||--o{ meal_plan_items : "contains"
+    chat_threads ||--o{ chat_messages : "contains"
+```
+
+---
+
+## Schema Reference
+
+### 1. Identity & Access Management (IAM)
+* **`users`**: Email credentials, verified status, full name, password hashes, and timestamps.
+* **`user_sessions`**: Session tokens, client IP, device user-agents, expiration dates.
+* **`roles` / `permissions`**: RBAC entities supporting administrative operations.
+
+### 2. Nutrition & Planner
+* **`ingredients`**: Caloric count, protein (g), fat (g), carbs (g), and category flags.
+* **`recipes`**: Title, instructions, preparation time, and nutritional sums.
+* **`food_logs`**: Daily logs tracking consumed foods and cumulative macronutrient summaries.
+* **`meal_plans`**: Meal configurations scheduled for user calendars.
+* **`shopping_lists`**: Automated shopping requirements generated from recipes.

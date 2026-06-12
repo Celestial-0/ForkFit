@@ -1,0 +1,66 @@
+---
+title: gRPC Intelligence Service
+description: Protobuf and gRPC schemas for internal service communications.
+---
+
+# gRPC Intelligence Service
+
+Internal communication between the Rust API gateway and the Python AI intelligence service is conducted over **gRPC** using **Protocol Buffers v3**.
+
+The service is defined in `server/proto/intelligence/v1/intelligence.proto`.
+
+---
+
+## IntelligenceService Definition
+
+```protobuf
+service IntelligenceService {
+  // Analyzes the raw user prompt to classify goals, constraints, diet, and budget parameters.
+  rpc ProcessIntent(IntentRequest) returns (IntentResponse);
+
+  // Executes the cognitive reasoning graph (LangGraph) and returns a real-time stream
+  // of agent execution steps, safety audits, and UI visualization packages.
+  rpc OrchestrateAgentGraph(OrchestrateGraphRequest) returns (stream OrchestrateGraphResponse);
+
+  // Triggers the learning loop reflection engine to extract rules, preferences, and feedback metrics.
+  rpc TriggerReflection(ReflectionRequest) returns (ReflectionResponse);
+}
+```
+
+---
+
+## Message Schemas
+
+### 1. Intent Analysis
+
+* **`IntentRequest`**
+  <TypeTable
+    type={{
+      prompt: { type: 'string', required: true, description: 'Raw query from the user.' },
+      user_id: { type: 'string', required: true, description: 'User UUID identifier.' }
+    }}
+  />
+
+* **`IntentResponse`**
+  <TypeTable
+    type={{
+      goal: { type: 'string', description: 'Classified goal (e.g. muscle_gain, weight_loss).' },
+      diet: { type: 'string', description: 'Dietary type (e.g. vegan, omnivore, keto).' },
+      budget_limit: { type: 'double', description: 'Extracted price threshold per day/week.' },
+      constraints: { type: 'string[]', description: 'User diet or allergy constraints.' }
+    }}
+  />
+
+---
+
+### 2. Agent Orchestration
+
+* **`OrchestrateGraphRequest`**
+  Sends the query along with the full database profile context of the user (allergies, targets, macros) and conversation history to LangGraph.
+
+* **`OrchestrateGraphResponse` (Streamed)**
+  A streamed envelope payload yielding updates in a `oneof` wrapper:
+  * **`AgentStepUpdate`**: Trace logging of node execution (agent name, status, tool payload inputs/outputs).
+  * **`TextDelta`**: Progressively streamed LLM text tokens for real-time rendering.
+  * **`UIElement`**: Dynamic configurations (charts, timelines) for custom client layouts.
+  * **`final_text`**: Complete structured reply.

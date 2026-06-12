@@ -1,0 +1,52 @@
+---
+title: Meal Plans & Pantry API
+description: API routes for meal schedulers, pantry inventories, and auto-generated shopping lists.
+---
+
+# Meal Plans & Pantry API
+
+Endpoints for organizing diets, tracking stored ingredients, and managing shopping lists.
+
+---
+
+## 1. Meal Plans
+
+### Get Active Meal Plan
+
+`GET /api/v1/meal-plans/active`
+
+Returns the currently running schedule of meals.
+
+---
+
+### Update Meal Plan Item Consumed Status
+
+`PATCH /api/v1/meal-plans/{id}/items/{item_id}/consumed`
+
+Marks a scheduled meal item as consumed or skipped.
+
+---
+
+## 2. Pantry & Shopping Lists
+
+### List Pantry Inventory
+
+`GET /api/v1/pantry`
+
+Returns all items currently stored in the user's kitchen pantry.
+
+---
+
+### Update Pantry Item Quantity
+
+`PATCH /api/v1/pantry/{id}`
+
+Updates expiration date or quantity of a pantry item.
+
+---
+
+### Get Shopping List
+
+`GET /api/v1/shopping-lists/{id}`
+
+Returns the shopping list items and whether they have been acquired.

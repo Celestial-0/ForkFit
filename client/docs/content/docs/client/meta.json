@@ -1,0 +1,7 @@
+{
+  "title": "Client",
+  "root": true,
+  "pages": [
+    "index"
+  ]
+}

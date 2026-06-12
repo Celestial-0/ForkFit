@@ -1,0 +1,35 @@
+---
+title: HTTP API Overview
+description: Architecture of the ForkFit HTTP gateway and rate limiting engine.
+---
+
+# HTTP API Overview
+
+The ForkFit server exposes a RESTful HTTP API built using the **Axum** framework in Rust. It serves as the primary gateway for web, mobile, and third-party developers.
+
+---
+
+## Gateway Architecture
+
+The gateway is built for high speed, reliability, and security. It incorporates:
+
+* **State Sharing**: Thread-safe database pools, Redis cache connections, and gRPC clients are shared across handlers using Axum's state extractors.
+* **Rate Limiting**: Enforces rate limits globally via `Tower Governor` using a token bucket algorithm.
+* **CORS**: Configured permissively for multi-domain client access.
+* **Middleware**: Generates correlation IDs, logs trace metrics, and intercepts session headers.
+
+---
+
+## Global API Properties
+
+* **Base URL**: `/api/v1` (with exception of `/health`)
+* **Default Port**: `3001`
+* **Response Format**: `application/json`
+
+<Callout type="info" title="Global Rate Limiting">
+  * **Sustained rate**: 1 request per second
+  * **Burst capacity**: Up to 120 requests
+  * **Exceeded responses**: Returns a `429 Too Many Requests` code.
+</Callout>
+
+Select **Endpoints** in the sidebar to review the full API route specification.

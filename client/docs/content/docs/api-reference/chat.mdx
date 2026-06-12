@@ -1,0 +1,51 @@
+---
+title: Chat & Feedback API
+description: Chat threads, messaging endpoints, and feedback submission routes.
+---
+
+# Chat & Feedback API
+
+Endpoints managing communication threads with the AI assistant and logging user reviews.
+
+---
+
+## 1. Chat Threads
+
+### Create Chat Thread
+
+`POST /api/v1/threads`
+
+Initializes a new conversational session.
+
+* **Payload Parameters**:
+  <TypeTable
+    type={{
+      title: { type: 'string', description: 'Optional custom topic header for the thread.' }
+    }}
+  />
+
+---
+
+### List Messages in Thread
+
+`GET /api/v1/threads/{id}/messages`
+
+Returns a list of conversation logs for a specific thread ID.
+
+---
+
+### Post Message to Thread
+
+`POST /api/v1/threads/{id}/messages`
+
+Appends a new user message to the conversation.
+
+---
+
+## 2. Platform Feedback
+
+### Submit User Feedback
+
+`POST /api/v1/feedback`
+
+Submits a rating and comment regarding system performance or AI advice accuracy.

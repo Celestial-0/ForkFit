@@ -1,0 +1,42 @@
+---
+title: Intelligence Agent (AI)
+description: Python cognitive reasoning engine, LangGraph routing, and vector memory.
+---
+
+# Intelligence Agent
+
+The ForkFit intelligence core is a Python application executing advanced cognitive agent loops. It acts as the "brain" of ForkFit, handling conversational routing, safety reviews, nutritional evaluations, budget compliance, and personal habits reflection.
+
+---
+
+## Agent Graph Architecture
+
+The orchestrator utilizes **LangGraph** to execute a cyclic state graph. Each node runs a specialized LLM agent or evaluation tool:
+
+```mermaid
+graph TD
+    UserQuery[User Query] --> Gateway[Gateway Agent]
+    Gateway --> Safety[Safety & Medical Agent]
+    Safety -- Approved --> Nutrition[Nutrition & Calories Agent]
+    Safety -- Rejected --> Block[System Alert Node]
+    Nutrition --> Budget[Budget & Shopping Agent]
+    Budget --> Generator[Dynamic UI/Text Generator]
+    Generator --> Response[Final Stream Response]
+```
+
+### Core Cognitive Agents
+1. **Safety & Medical Agent**: Analyzes user's biometrics, safety constraints (e.g. allergies, kidney issues) to check if the food or plan is medically safe.
+2. **Nutrition Agent**: Calculates daily targets, evaluates macros (protein, fats, carbs), and maps ingredient calories.
+3. **Budget Agent**: Inspects pricing thresholds, local store availability, and suggests cost-efficient recipes.
+4. **Reflection Engine**: Run asynchronously after active chat feedback. It updates the user's semantic profile (written to PostgreSQL `agent_memories` table) to extract user preferences, favorite foods, or cuisines.
+
+---
+
+## Technical Stack
+
+The service is configured with the following tech stack:
+
+* **LangGraph & LangChain**: Structural frameworks for multi-agent loops and conversational history chaining.
+* **uv**: Super-fast Python package and environment manager.
+* **FastAPI / gRPC**: Server interface serving endpoints and gRPC requests on port `50051`.
+* **PGVector**: Semantic vector search for retrieving user context, memory indexes, and allergen correlations.

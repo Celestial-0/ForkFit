@@ -2,11 +2,12 @@
   "title": "API Reference",
   "pages": [
     "signup-signin",
-    "current-user",
-    "email-verification",
-    "password-management",
-    "sessions",
-    "oauth",
-    "authorization"
+    "authorization",
+    "profile",
+    "recipes",
+    "plans",
+    "chat",
+    "intelligence",
+    "admin"
   ]
 }

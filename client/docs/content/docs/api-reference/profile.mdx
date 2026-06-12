@@ -1,0 +1,68 @@
+---
+title: Profiles & Biometrics API
+description: Detailed reference for user profiles, safety checklists, biometrics tracking, and active goals.
+---
+
+# Profiles & Biometrics API
+
+Endpoints for retrieving and writing personalized preferences, body measurements, and active health objectives.
+
+---
+
+## 1. Profiles & Safety
+
+### Get Profile Details
+
+`GET /api/v1/profile`
+
+Returns target macros, height, weight, activity levels, and preferences.
+
+---
+
+### Update Profile Parameters
+
+`PUT /api/v1/profile`
+
+Updates physical metadata and calorie targets.
+
+---
+
+### Update Medical Safety Details
+
+`PUT /api/v1/profile/safety`
+
+Updates safety parameters like food allergies and medical restrictions.
+
+* **Payload Parameters**:
+  <TypeTable
+    type={{
+      allergies: { type: 'string[]', description: 'List of allergen ingredients (e.g. peanuts).' },
+      medical_conditions: { type: 'string[]', description: 'Known conditions (e.g. hypertension).' }
+    }}
+  />
+
+---
+
+## 2. Logs & Goals
+
+### Log Biometric Entry
+
+`POST /api/v1/profile/biometrics`
+
+Submits a new metric reading.
+
+* **Payload Parameters**:
+  <TypeTable
+    type={{
+      reading_type: { type: 'string', required: true, description: '"weight", "height", or "body_fat".' },
+      value: { type: 'number', required: true, description: 'Numeric value of the logged entry.' }
+    }}
+  />
+
+---
+
+### Log Workout Session
+
+`POST /api/v1/profile/workouts`
+
+Records physical activities, duration, and calories burned.
