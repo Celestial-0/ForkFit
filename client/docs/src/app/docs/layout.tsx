@@ -9,6 +9,8 @@ import { buttonVariants } from 'fumadocs-ui/components/ui/button';
 export default function Layout({ children }: LayoutProps<'/docs'>) {
   return (
     <DocsLayout tree={source.getPageTree()} {...baseOptions()}>
+
+
       <AISearch>
         <AISearchPanel />
         <AISearchTrigger

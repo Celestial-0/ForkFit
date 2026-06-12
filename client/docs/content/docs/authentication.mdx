@@ -1,121 +1,40 @@
 ---
-title: Authentication
-description: How authentication works in the ForkFit API — Bearer tokens, session management, and protected endpoints.
+title: Authentication & Sessions
+description: Deep dive into ForkFit session-based authentication model, token structure, and OTP validation.
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
-import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
-import { TypeTable } from 'fumadocs-ui/components/type-table';
+# Authentication & Sessions
 
-## Authentication Model
+ForkFit employs a secure, stateless bearer-token session model. Upon signing in, client apps receive an access token that must be presented in the `Authorization` header of all protected requests.
 
-ForkFit uses **session-based authentication** with **Bearer tokens**. When a user signs up or signs in, the API creates a server-side session and returns an opaque access token.
+---
 
-### How It Works
+## Authorization Header
 
-1. The client sends credentials to `/auth/signup` or `/auth/signin`
-2. The server creates a session record in the database with a hashed token
-3. The server returns the raw token in the response as `access_token`
-4. The client includes this token in the `Authorization` header for all subsequent requests
+All protected resources expect an `Authorization` header in the following format:
 
-```
-Authorization: Bearer ff_<uuid>_<uuid>_<uuid>
+```http
+Authorization: Bearer <your_session_token>
 ```
 
-<Callout type="info" title="Token Format">
-  Session tokens follow the format `ff_<uuid>_<uuid>_<uuid>` — three concatenated UUIDv4 values prefixed with `ff_`. Tokens are hashed with SHA-256 before storage; the server never stores raw tokens.
+<Callout type="error" title="Missing or Invalid Token">
+  If the token is missing, expired, or revoked, the server replies with a `401 Unauthorized` status.
 </Callout>
 
-## Making Authenticated Requests
+---
 
-Include the `Authorization` header with every request to a protected endpoint:
+## Token Lifecycle
 
-<Tabs items={['cURL', 'JavaScript', 'Python']}>
-  <Tab value="cURL">
-    ```bash
-    curl -X GET http://localhost:3001/api/v1/auth/me \
-      -H "Authorization: Bearer ff_abc123_def456_ghi789"
-    ```
-  </Tab>
-  <Tab value="JavaScript">
-    ```js
-    const response = await fetch('http://localhost:3001/api/v1/auth/me', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    ```
-  </Tab>
-  <Tab value="Python">
-    ```python
-    import requests
+1. **Generation**: Created during `/auth/signin` or successful OAuth callbacks.
+2. **TTL (Time to Live)**: Configured via the `SESSION_TTL_SECONDS` environment variable (defaults to 30 days).
+3. **Storage**: Access tokens are stored on the server as active sessions in the `user_sessions` database table, enabling real-time audits and revocation.
+4. **Revocation**: A user can delete specific session IDs, or revoke all active sessions (`/auth/signout-all`).
 
-    response = requests.get(
-        'http://localhost:3001/api/v1/auth/me',
-        headers={'Authorization': f'Bearer {access_token}'}
-    )
-    ```
-  </Tab>
-</Tabs>
+---
 
-## Session Lifecycle
+## One-Time Passwords (OTP)
 
-<TypeTable
-  type={{
-    expires_at: {
-      type: 'DateTime<Utc>',
-      description: 'When the session token expires. Configurable via SESSION_TTL_SECONDS.',
-      default: '30 days from creation',
-    },
-    last_seen_at: {
-      type: 'DateTime<Utc>',
-      description: 'Updated on every authenticated request. Useful for showing active sessions.',
-    },
-    revoked_at: {
-      type: 'DateTime<Utc> | null',
-      description: 'Set when the session is explicitly revoked via signout or admin action.',
-    },
-    device_name: {
-      type: 'string | null',
-      description: 'Provided by the client during signin, or inferred from the User-Agent header.',
-    },
-  }}
-/>
+Certain operations (such as email verification and resetting passwords) require a temporary 6-digit verification code:
 
-A session is considered **invalid** if any of the following are true:
-
-- `revoked_at` is set (session was explicitly revoked)
-- `expires_at` is in the past (session expired)
-- The user's `deleted_at` is set (user was soft-deleted)
-- The user's `status` is not `active`
-
-## Protected vs Public Endpoints
-
-| Endpoint | Auth Required | Description |
-|---|---|---|
-| `POST /auth/signup` | ❌ No | Register a new account |
-| `POST /auth/signin` | ❌ No | Sign in with credentials |
-| `POST /auth/forgot-password` | ❌ No | Request a password reset OTP |
-| `POST /auth/reset-password` | ❌ No | Reset password with OTP |
-| `POST /auth/send-verification-otp` | ❌ No | Request email verification OTP |
-| `POST /auth/verify-email` | ❌ No | Verify email with OTP |
-| `GET /auth/oauth/{provider}/authorize` | ❌ No | Start OAuth flow |
-| `GET /auth/oauth/{provider}/callback` | ❌ No | OAuth callback |
-| `GET /auth/me` | ✅ Yes | Get current user |
-| `POST /auth/signout` | ✅ Yes | Sign out current session |
-| `POST /auth/signout-all` | ✅ Yes | Revoke all sessions |
-| `POST /auth/change-password` | ✅ Yes | Change password |
-| `GET /auth/sessions` | ✅ Yes | List user's sessions |
-| `DELETE /auth/sessions/{id}` | ✅ Yes | Revoke a specific session |
-| `GET /roles` | ✅ Yes + Permission | List roles |
-| `POST /roles` | ✅ Yes + Permission | Create a role |
-| `GET /permissions` | ✅ Yes + Permission | List permissions |
-| `POST /permissions` | ✅ Yes + Permission | Create a permission |
-| `POST /roles/{id}/permissions/{id}` | ✅ Yes + Permission | Assign permission to role |
-| `DELETE /roles/{id}/permissions/{id}` | ✅ Yes + Permission | Remove permission from role |
-| `POST /users/{id}/roles/{id}` | ✅ Yes + Permission | Assign role to user |
-| `DELETE /users/{id}/roles/{id}` | ✅ Yes + Permission | Remove role from user |
-
-<Callout type="warn" title="Authorization Layer">
-  Endpoints under the **Authorization** section require the authenticated user to have specific permissions assigned via their roles. See the [Authorization docs](/docs/api-reference/authorization) for details.
-</Callout>
+* **OTP Lifespan**: Configured via `OTP_TTL_SECONDS` (defaults to 10 minutes).
+* **Max Attempts**: Users are allowed up to 5 attempts to input the correct OTP before the code is permanently invalidated.

@@ -1,0 +1,28 @@
+---
+title: Admin API Reference
+description: API reference for system administration, background runner queues, and system audit logs.
+---
+
+# Admin API Reference
+
+Protected admin-only endpoints for managing background tasks and auditing operations. Requires a user session with the `admin` role.
+
+---
+
+## 1. System Jobs
+
+### List Background Jobs
+
+`GET /api/v1/admin/jobs`
+
+Returns status information for active job workers, scheduled notifications, and cache cleanups.
+
+---
+
+## 2. Audit Logs
+
+### List System Audit Logs
+
+`GET /api/v1/admin/audit-logs`
+
+Retrieves system action logs (session revokes, role alterations, permission creations) with user correlation details.

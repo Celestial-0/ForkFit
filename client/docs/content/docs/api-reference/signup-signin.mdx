@@ -1,221 +1,68 @@
 ---
-title: Sign Up & Sign In
-description: Register new user accounts and authenticate with email/password credentials.
+title: Signup & Signin API
+description: API endpoints for creating accounts, signing in, listing sessions, and revoking access.
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
-import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
-import { TypeTable } from 'fumadocs-ui/components/type-table';
+# Signup & Signin API
 
-## Sign Up
-
-Create a new user account. On success, a session is created and a verification OTP is sent to the provided email address.
-
-```
-POST /api/v1/auth/signup
-```
-
-<Callout type="info" title="What happens on signup">
-  The server creates the user, credentials, profile, preferences, settings, and session all in a single transaction. An email verification OTP is sent automatically.
-</Callout>
-
-### Request Body
-
-<TypeTable
-  type={{
-    email: {
-      type: 'string',
-      description: 'User email address. Will be normalized to lowercase and trimmed. Must be a valid email format.',
-      required: true,
-    },
-    password: {
-      type: 'string',
-      description: 'Account password. Must be at least 8 characters long. Hashed with bcrypt before storage.',
-      required: true,
-    },
-    full_name: {
-      type: 'string | null',
-      description: 'User\'s full name. Stored in the profile. Optional.',
-    },
-  }}
-/>
-
-### Response
-
-Returns an `AuthResponse` with the session token and user information.
-
-<TypeTable
-  type={{
-    access_token: {
-      type: 'string',
-      description: 'Bearer token for authenticating subsequent requests. Format: ff_<uuid>_<uuid>_<uuid>',
-      required: true,
-    },
-    token_type: {
-      type: '"Bearer"',
-      description: 'Always "Bearer".',
-      required: true,
-    },
-    expires_at: {
-      type: 'DateTime<Utc>',
-      description: 'When this token expires. Default is 30 days from creation.',
-      required: true,
-    },
-    "user.id": {
-      type: 'UUID',
-      description: 'Unique user identifier.',
-      required: true,
-    },
-    "user.email": {
-      type: 'string',
-      description: 'Normalized email address.',
-      required: true,
-    },
-    "user.email_verified": {
-      type: 'boolean',
-      description: 'Whether the email has been verified. Initially false.',
-      required: true,
-    },
-    "user.status": {
-      type: 'string',
-      description: 'Account status. Initially "active".',
-      required: true,
-    },
-    "user.created_at": {
-      type: 'DateTime<Utc>',
-      description: 'Account creation timestamp.',
-      required: true,
-    },
-    "user.updated_at": {
-      type: 'DateTime<Utc>',
-      description: 'Last update timestamp.',
-      required: true,
-    },
-  }}
-/>
-
-### Example
-
-<Tabs items={['cURL', 'JavaScript']}>
-  <Tab value="cURL">
-    ```bash
-    curl -X POST http://localhost:3001/api/v1/auth/signup \
-      -H "Content-Type: application/json" \
-      -d '{
-        "email": "jane@example.com",
-        "password": "mySecureP@ss123",
-        "full_name": "Jane Doe"
-      }'
-    ```
-  </Tab>
-  <Tab value="JavaScript">
-    ```js
-    const res = await fetch('/api/v1/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: 'jane@example.com',
-        password: 'mySecureP@ss123',
-        full_name: 'Jane Doe',
-      }),
-    });
-
-    const { access_token, user } = await res.json();
-    ```
-  </Tab>
-</Tabs>
-
-```json title="Response — 200 OK"
-{
-  "access_token": "ff_a1b2c3d4..._e5f6g7h8..._i9j0k1l2...",
-  "token_type": "Bearer",
-  "expires_at": "2026-07-07T19:23:00Z",
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "jane@example.com",
-    "email_verified": false,
-    "status": "active",
-    "created_at": "2026-06-07T19:23:00Z",
-    "updated_at": "2026-06-07T19:23:00Z"
-  }
-}
-```
-
-### Errors
-
-| Status | Code | Cause |
-|---|---|---|
-| `400` | `bad_request` | Invalid email format or password too short |
-| `409` | `conflict` | Email is already registered |
+All authentication routes are nested under `/api/v1/auth`.
 
 ---
 
-## Sign In
+## 1. Authentication Handlers
 
-Authenticate an existing user with email and password.
+### Sign Up Account
 
-```
-POST /api/v1/auth/signin
-```
+`POST /api/v1/auth/signup`
 
-### Request Body
+Registers a new user account on the platform.
 
-<TypeTable
-  type={{
-    email: {
-      type: 'string',
-      description: 'User email address.',
-      required: true,
-    },
-    password: {
-      type: 'string',
-      description: 'Account password.',
-      required: true,
-    },
-    device_name: {
-      type: 'string | null',
-      description: 'Human-readable device name (e.g., "iPhone 15", "Chrome on Windows"). Falls back to the User-Agent header if not provided. Truncated to 128 characters.',
-    },
-  }}
-/>
+* **Payload Parameters**:
+  <TypeTable
+    type={{
+      email: { type: 'string', required: true, description: 'Unique user email address.' },
+      password: { type: 'string', required: true, description: 'Min 8 characters password.' },
+      full_name: { type: 'string', required: true, description: 'User full name.' }
+    }}
+  />
 
-### Response
+---
 
-Returns the same `AuthResponse` format as Sign Up.
+### Sign In Session
 
-### Example
+`POST /api/v1/auth/signin`
 
-<Tabs items={['cURL', 'JavaScript']}>
-  <Tab value="cURL">
-    ```bash
-    curl -X POST http://localhost:3001/api/v1/auth/signin \
-      -H "Content-Type: application/json" \
-      -d '{
-        "email": "jane@example.com",
-        "password": "mySecureP@ss123",
-        "device_name": "Chrome on macOS"
-      }'
-    ```
-  </Tab>
-  <Tab value="JavaScript">
-    ```js
-    const res = await fetch('/api/v1/auth/signin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: 'jane@example.com',
-        password: 'mySecureP@ss123',
-        device_name: 'Chrome on macOS',
-      }),
-    });
+Logs a user in and returns a bearer access token.
 
-    const { access_token } = await res.json();
-    ```
-  </Tab>
-</Tabs>
+* **Payload Parameters**:
+  <TypeTable
+    type={{
+      email: { type: 'string', required: true, description: 'Login email.' },
+      password: { type: 'string', required: true, description: 'Account password.' }
+    }}
+  />
 
-### Errors
+---
 
-| Status | Code | Cause |
-|---|---|---|
-| `401` | `unauthorized` | Invalid credentials, user not found, or user inactive |
+## 2. Session Controls
+
+### List Active Sessions
+
+`GET /api/v1/auth/sessions`
+
+Returns all active device login sessions for the authenticated user.
+
+---
+
+### Revoke Specific Session
+
+`DELETE /api/v1/auth/sessions/{id}`
+
+Terminates a specific session, instantly logging that device out.
+
+* **Path Parameters**:
+  <TypeTable
+    type={{
+      id: { type: 'string', required: true, description: 'The UUID of the session to revoke.' }
+    }}
+  />

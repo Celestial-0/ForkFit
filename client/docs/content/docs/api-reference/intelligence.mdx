@@ -1,0 +1,52 @@
+---
+title: AI Intelligence API
+description: API interfaces for LangGraph orchestration, active memories search, and execution traces.
+---
+
+# AI Intelligence API
+
+Endpoints for triggering the cognitive agent loops and auditing execution traces.
+
+---
+
+## 1. Orchestration
+
+### Orchestrate Agent Action
+
+`POST /api/v1/intelligence/orchestrate`
+
+Triggers the Python LangGraph orchestrator to analyze and evaluate a user prompt.
+
+* **Payload Parameters**:
+  <TypeTable
+    type={{
+      prompt: { type: 'string', required: true, description: 'Question or command from the user.' },
+      session_id: { type: 'string', required: true, description: 'Chat thread UUID.' }
+    }}
+  />
+
+---
+
+### Stream Execution Trace Updates
+
+`GET /api/v1/intelligence/stream/{trace_id}`
+
+An SSE (Server-Sent Events) endpoint streaming real-time tokens, execution step state logs, and UI components from the LangGraph run.
+
+---
+
+## 2. Memory & Traces
+
+### Search Active Memories
+
+`POST /api/v1/intelligence/memories/search`
+
+Queries the vector-indexed database for personal constraints and habits memories.
+
+---
+
+### List Execution Traces
+
+`GET /api/v1/intelligence/traces`
+
+Retrieves logs of agent decisions, tool execution times, and safety review results.

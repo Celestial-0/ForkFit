@@ -1,0 +1,161 @@
+---
+title: API Endpoints Reference
+description: Detailed HTTP route specifications, parameters, and query endpoints.
+---
+
+# API Endpoints Reference
+
+Below is the complete API reference for all endpoints supported by the ForkFit server, grouped by functional module.
+
+---
+
+## 1. Authentication & RBAC
+
+Endpoints for user accounts, session tokens, OTPs, and access controls.
+
+<Accordions>
+  <Accordion title="POST /api/v1/auth/signup - Create User Account">
+    Creates a new user profile with verification settings.
+
+    #### Request Payload
+    <TypeTable
+      type={{
+        email: { type: 'string', required: true, description: 'User login email address.' },
+        password: { type: 'string', required: true, description: 'Min 8 characters secure password.' },
+        full_name: { type: 'string', required: true, description: 'User display name.' }
+      }}
+    />
+
+    #### Example Request
+    <Tabs items={['cURL', 'JavaScript']}>
+      <Tab value="cURL">
+        ```bash
+        curl -X POST http://localhost:3001/api/v1/auth/signup \
+          -H "Content-Type: application/json" \
+          -d '{"email":"user@example.com","password":"mypassword","full_name":"John Doe"}'
+        ```
+      </Tab>
+      <Tab value="JavaScript">
+        ```js
+        fetch('/api/v1/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'user@example.com', password: 'mypassword', full_name: 'John Doe' })
+        });
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/signin - User Login">
+    Starts an active session and returns a Bearer auth token.
+
+    #### Request Payload
+    <TypeTable
+      type={{
+        email: { type: 'string', required: true, description: 'User account email.' },
+        password: { type: 'string', required: true, description: 'Account password.' }
+      }}
+    />
+  </Accordion>
+
+  <Accordion title="GET /api/v1/auth/me - Current Profile Context">
+    Returns details of the currently authenticated user. Requires a `Authorization: Bearer <token>` header.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/roles - Create/List Roles">
+    Manage access roles. Admin authorization is required.
+  </Accordion>
+</Accordions>
+
+---
+
+## 2. User Profiles
+
+Manage biometrics, preferred food types, goals, and medical parameters.
+
+<Accordions>
+  <Accordion title="GET /api/v1/profile - Get User Profile">
+    Retrieves user height, weight, BMI, daily nutritional goals, and preferred cuisines.
+  </Accordion>
+
+  <Accordion title="PUT /api/v1/profile - Update User Profile">
+    Update profile metrics.
+
+    #### Request Payload
+    <TypeTable
+      type={{
+        full_name: { type: 'string', description: 'Display name.' },
+        height_cm: { type: 'number', description: 'Height metric.' },
+        target_calories: { type: 'number', description: 'Daily calorie target.' }
+      }}
+    />
+  </Accordion>
+
+  <Accordion title="POST /api/v1/profile/biometrics - Log Biometrics">
+    Logs an entry of weight, height, or fat percentage for historical tracking.
+  </Accordion>
+</Accordions>
+
+---
+
+## 3. Recipes & Nutrition
+
+Log meals, query nutritional databases, and catalog ingredients.
+
+<Accordions>
+  <Accordion title="GET /api/v1/ingredients/search - Search Ingredients">
+    Queries the database for nutritional values of ingredients.
+
+    #### Query Parameters
+    <TypeTable
+      type={{
+        q: { type: 'string', required: true, description: 'Search keywords (e.g. apple, egg).' }
+      }}
+    />
+  </Accordion>
+
+  <Accordion title="POST /api/v1/food-logs - Log Daily Food Item">
+    Record ingredients or custom recipes consumed by the user.
+  </Accordion>
+</Accordions>
+
+---
+
+## 4. Plans & Pantry
+
+Calendared meal programs, items in the home pantry, and automated lists.
+
+<Accordions>
+  <Accordion title="GET /api/v1/meal-plans/active - Active Meal Plan">
+    Returns the user's active diet schedule and calorie targets.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/pantry - Add Pantry Item">
+    Add an ingredient to the user's digital pantry inventory.
+  </Accordion>
+</Accordions>
+
+---
+
+## 5. Chat & AI Intelligence
+
+Interact with our cognitive graph loops and search semantic memories.
+
+<Accordions>
+  <Accordion title="POST /api/v1/intelligence/orchestrate - Run Agent Graph">
+    Starts a LangGraph orchestration loop for coaching, recipes, or queries.
+
+    #### Request Payload
+    <TypeTable
+      type={{
+        prompt: { type: 'string', required: true, description: 'Question or instruction for the AI.' },
+        session_id: { type: 'string', required: true, description: 'Active chat thread ID.' }
+      }}
+    />
+  </Accordion>
+
+  <Accordion title="GET /api/v1/intelligence/stream/{trace_id} - Stream Node Updates">
+    SSE stream endpoint yielding real-time node outputs, tokens, and safety audits.
+  </Accordion>
+</Accordions>

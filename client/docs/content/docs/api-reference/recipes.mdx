@@ -1,0 +1,59 @@
+---
+title: Recipes & Nutrition API
+description: API routes for ingredients queries, custom recipe generation, and daily macronutrient logging.
+---
+
+# Recipes & Nutrition API
+
+Endpoints managing the food catalog, recipe creation, and nutritional logging.
+
+---
+
+## 1. Ingredients Queries
+
+### Search Ingredients Database
+
+`GET /api/v1/ingredients/search`
+
+Returns matching ingredients from our nutritional catalog.
+
+* **Query Parameters**:
+  <TypeTable
+    type={{
+      q: { type: 'string', required: true, description: 'Ingredient search query.' }
+    }}
+  />
+
+---
+
+### Get Ingredient Details
+
+`GET /api/v1/ingredients/{id}`
+
+Returns macro details (protein, fat, carbs, calories) for a specific ingredient ID.
+
+---
+
+## 2. Recipes & Logging
+
+### Create Recipe
+
+`POST /api/v1/recipes`
+
+Saves a custom recipe consisting of multiple ingredients.
+
+---
+
+### Log Food Consumption
+
+`POST /api/v1/food-logs`
+
+Logs an ingredient or recipe consumed in a specific portion size.
+
+---
+
+### Get Daily Macros
+
+`GET /api/v1/food-logs/daily`
+
+Returns a summarized breakdown of protein, fat, carbs, and calories consumed today vs user targets.
