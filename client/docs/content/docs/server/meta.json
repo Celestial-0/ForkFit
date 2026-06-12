@@ -1,12 +1,10 @@
 {
   "title": "Server",
-  "root": true,
   "pages": [
     "index",
-    "database/index",
-    "intellegence/index",
-    "api/index",
-    "api/endpoints",
-    "grpc/index"
+    "database",
+    "api",
+    "intelligence",
+    "grpc"
   ]
 }

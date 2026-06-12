@@ -322,9 +322,15 @@ export function FeedbackText({ onSendAction, children }: FeedbackTextProps) {
 
   return (
     <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        ::highlight(fd-feedback-text) {
+          background-color: var(--color-fd-primary) !important;
+          color: var(--color-fd-primary-foreground) !important;
+        }
+      `}} />
       <div
         ref={containerRef}
-        className="prose-no-margin [&_::highlight(fd-feedback-text)]:bg-fd-primary [&_::highlight(fd-feedback-text)]:text-fd-primary-foreground"
+        className="prose-no-margin"
       >
         {children}
       </div>
