@@ -78,6 +78,8 @@ impl<R: RecipeRepository> RecipeService<R> {
             price_currency: req.price_currency.unwrap_or_else(|| "INR".to_string()),
             barcode: req.barcode,
             is_verified: false,
+            food_code: None,
+            primary_source: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         };
@@ -240,6 +242,29 @@ impl<R: RecipeRepository> RecipeService<R> {
             return Err(RecipeError::ValidationError("Nutrients cannot be negative".to_string()).into());
         }
 
+        // Generate micronutrients snapshot (scale values from ingredient if logged via ingredient)
+        let micronutrients_snapshot = if let Some(ing_id) = req.ingredient_id {
+            // We already fetched ingredient `i` above
+            let ing = self.repo.get_ingredient(ing_id).await?;
+            if let Some(i) = ing {
+                let factor = req.quantity / 100.0;
+                if let serde_json::Value::Object(mut map) = i.micronutrients.clone() {
+                    for (_, val) in map.iter_mut() {
+                        if let Some(num) = val.as_f64() {
+                            *val = serde_json::json!(num * factor);
+                        }
+                    }
+                    serde_json::Value::Object(map)
+                } else {
+                    i.micronutrients.clone()
+                }
+            } else {
+                serde_json::json!({})
+            }
+        } else {
+            serde_json::json!({})
+        };
+
         let log = FoodLog {
             id: FoodLogId::new(),
             user_id,
@@ -254,6 +279,7 @@ impl<R: RecipeRepository> RecipeService<R> {
             protein,
             carbs,
             fats,
+            micronutrients_snapshot,
             created_at: Utc::now(),
         };
 
@@ -334,7 +360,7 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
     use crate::common::id::{UserId, RecipeId, IngredientId};
-    use crate::recipe::models::RecipeIngredientDetail;
+    use crate::recipe::models::{RecipeIngredientDetail, IngredientPortion};
     use crate::recipe::types::RecipeIngredientInput;
     use uuid::Uuid;
 
@@ -409,6 +435,14 @@ mod tests {
 
         async fn get_daily_macros(&self, _user_id: UserId, _date: NaiveDate) -> AppResult<(f64, f64, f64, f64)> {
             Ok((0.0, 0.0, 0.0, 0.0))
+        }
+
+        async fn add_ingredient_portion(&self, portion: IngredientPortion) -> AppResult<IngredientPortion> {
+            Ok(portion)
+        }
+
+        async fn get_ingredient_portions(&self, _ingredient_id: IngredientId) -> AppResult<Vec<IngredientPortion>> {
+            Ok(vec![])
         }
     }
 

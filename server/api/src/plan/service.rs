@@ -342,7 +342,7 @@ mod tests {
     use chrono::NaiveDate;
     use crate::common::id::{UserId, MealPlanId, MealPlanItemId, PantryItemId, ShoppingListId, ShoppingListItemId, RecipeId, IngredientId};
     use crate::plan::types::MealPlanItemInput;
-    use crate::recipe::models::{Ingredient, Recipe, RecipeIngredient, RecipeWithIngredients, FoodLog};
+    use crate::recipe::models::{Ingredient, Recipe, RecipeIngredient, RecipeWithIngredients, FoodLog, IngredientPortion};
     use crate::recipe::repository::RecipeRepository;
     use uuid::Uuid;
 
@@ -513,6 +513,12 @@ mod tests {
         }
         async fn get_daily_macros(&self, _user_id: UserId, _date: NaiveDate) -> AppResult<(f64, f64, f64, f64)> {
             Ok((0.0, 0.0, 0.0, 0.0))
+        }
+        async fn add_ingredient_portion(&self, portion: IngredientPortion) -> AppResult<IngredientPortion> {
+            Ok(portion)
+        }
+        async fn get_ingredient_portions(&self, _ingredient_id: IngredientId) -> AppResult<Vec<IngredientPortion>> {
+            Ok(vec![])
         }
     }
 

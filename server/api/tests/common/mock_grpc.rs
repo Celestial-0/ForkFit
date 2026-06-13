@@ -1,5 +1,5 @@
 use std::pin::Pin;
-use futures::{Stream, stream};
+use futures::Stream;
 use tonic::{Request, Response, Status};
 
 use api::gateway::grpc_client::intelligence::{
@@ -105,13 +105,13 @@ impl IntelligenceService for MockIntelligenceService {
                             title: "AI Meal Plan".to_string(),
                             config_json: "{}".to_string(),
                             data_json: serde_json::json!({
-                                "title": "AI Muscle Gain Plan",
+                                "name": "AI Muscle Gain Plan",
                                 "start_date": "2026-06-10",
                                 "end_date": "2026-06-16",
-                                "status": "active",
+                                "is_active": true,
                                 "items": [
                                     {
-                                        "recipe_id": uuid::Uuid::new_v4().to_string(),
+                                        "recipe_id": "11111111-1111-1111-1111-111111111111".to_string(),
                                         "planned_date": "2026-06-10",
                                         "meal_type": "breakfast",
                                         "servings": 1.0,
@@ -124,7 +124,14 @@ impl IntelligenceService for MockIntelligenceService {
             ]
         };
 
-        let stream = stream::iter(responses.into_iter().map(Ok));
+        let stream = async_stream::stream! {
+            // Initial short sleep to let the HTTP client subscribe
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            for resp in responses {
+                yield Ok(resp);
+                tokio::time::sleep(std::time::Duration::from_millis(15)).await;
+            }
+        };
         Ok(Response::new(Box::pin(stream)))
     }
 

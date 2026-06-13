@@ -15,7 +15,10 @@ pub async fn get_free_port() -> u16 {
     listener.local_addr().unwrap().port()
 }
 
+static SETUP_MUTEX: once_cell::sync::Lazy<tokio::sync::Mutex<()>> = once_cell::sync::Lazy::new(|| tokio::sync::Mutex::new(()));
+
 pub async fn setup_test_state(fail: bool, final_text_only: bool) -> (Arc<AppState>, PgPool, redis::Client) {
+    let _guard = SETUP_MUTEX.lock().await;
     // Load environment variables
     dotenvy::dotenv().ok();
 
@@ -91,6 +94,18 @@ pub async fn setup_test_state(fail: bool, final_text_only: bool) -> (Arc<AppStat
         mailer,
         trace_channels: Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new())),
     });
+
+    // Seed a dummy recipe for the orchestration tests validation
+    sqlx::query(
+        "INSERT INTO recipes (id, title, instructions, servings) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING"
+    )
+    .bind(uuid::Uuid::parse_str("11111111-1111-1111-1111-111111111111").unwrap())
+    .bind("Test Recipe")
+    .bind(&vec!["Step 1".to_string()])
+    .bind(1.00)
+    .execute(&db)
+    .await
+    .expect("Failed to seed dummy recipe");
 
     (state, db, redis)
 }

@@ -14,6 +14,9 @@ pub fn spawn_orchestration_worker(
     tx: tokio::sync::broadcast::Sender<SseEvent>,
 ) {
     tokio::spawn(async move {
+        // A short delay to allow the client to connect and subscribe to the SSE channel
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
         tracing::info!("Starting background orchestration worker for trace: {}", trace_id);
         if let Err(e) = run_orchestration(state, trace_id, user_id, session_id, thread_id, prompt, tx).await {
             tracing::error!("Error in orchestration worker execution: {:?}", e);

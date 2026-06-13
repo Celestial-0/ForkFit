@@ -98,6 +98,7 @@ define_id!(ShoppingListItemId);
 define_id!(BackgroundJobId);
 define_id!(NotificationLogId);
 define_id!(AuditLogId);
+define_id!(IngredientPortionId);
 
 #[cfg(test)]
 mod tests {
