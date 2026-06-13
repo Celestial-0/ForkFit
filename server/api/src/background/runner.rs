@@ -208,10 +208,10 @@ async fn process_job(
                     rec.description.unwrap_or_default()
                 );
 
-                // Generate deterministic vector of 2560 floats for testing/mock purposes
-                let mut vec_str = String::with_capacity(30 * 2560);
+                // Generate deterministic vector of 1536 floats for testing/mock purposes
+                let mut vec_str = String::with_capacity(30 * 1536);
                 vec_str.push('[');
-                for i in 0..2560 {
+                for i in 0..1536 {
                     if i > 0 {
                         vec_str.push(',');
                     }
