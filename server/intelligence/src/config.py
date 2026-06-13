@@ -30,8 +30,8 @@ class Settings(BaseSettings):
     embedding_model: str = "qwen3-embedding:4b"
     """Name of the embedding model served by Ollama."""
 
-    embedding_dimensions: int = 2560
-    """Dimensionality of embedding vectors — must match ``vector(2560)`` in DB."""
+    embedding_dimensions: int = 1536
+    """Dimensionality of embedding vectors — must match ``vector(1536)`` in DB."""
 
     # ── gRPC ──────────────────────────────────────────────────────────────
     grpc_host: str = "0.0.0.0"

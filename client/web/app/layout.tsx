@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Figtree, JetBrains_Mono } from "next/font/google"
+import {  Geist_Mono, Figtree, JetBrains_Mono } from "next/font/google"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -28,14 +28,17 @@ export default function RootLayout({
       className={cn(
         "antialiased",
         fontMono.variable,
-        "font-sans",
         figtree.variable,
         jetbrainsMonoHeading.variable
       )}
     >
       <body>
-        <ThemeProvider>
-          {" "}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
       </body>

@@ -31,7 +31,7 @@ async def test_run_reflection_llm_success(
 
     # Setup database mocks
     mock_create_memory.side_effect = lambda pool, user_id, memory_type, content, confidence: f"{memory_type}-uuid"
-    mock_embed.return_value = [0.1] * 2560
+    mock_embed.return_value = [0.1] * 1536
 
     settings = Settings(database_url="postgresql://localhost/db")
     pool = MagicMock()
@@ -65,7 +65,7 @@ async def test_run_reflection_implicit_feedback(
 ):
     # Mocks setup
     mock_create_memory.return_value = "memory-uuid"
-    mock_embed.return_value = [0.1] * 2560
+    mock_embed.return_value = [0.1] * 1536
     
     settings = Settings(database_url="postgresql://localhost/db")
     pool = MagicMock()

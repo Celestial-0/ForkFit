@@ -44,7 +44,34 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_thread ON chat_messages(thread_id, 
 CREATE INDEX IF NOT EXISTS idx_ai_execution_steps_trace ON ai_execution_steps(trace_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_date ON audit_logs(actor_user_id, created_at DESC);
 
+-- Recreate embedding tables with 1536 dimensions (to fit within pgvector HNSW index 2000-dimension limit)
+DROP TABLE IF EXISTS recipe_embeddings CASCADE;
+DROP TABLE IF EXISTS ingredient_embeddings CASCADE;
+DROP TABLE IF EXISTS agent_memory_embeddings CASCADE;
+
+CREATE TABLE recipe_embeddings (
+    recipe_id uuid PRIMARY KEY REFERENCES recipes(id) ON DELETE CASCADE,
+    embedding vector(1536) NOT NULL,
+    chunk_text text NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE ingredient_embeddings (
+    ingredient_id uuid PRIMARY KEY REFERENCES ingredients(id) ON DELETE CASCADE,
+    embedding vector(1536) NOT NULL,
+    chunk_text text NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE agent_memory_embeddings (
+    memory_id uuid PRIMARY KEY REFERENCES agent_memories(id) ON DELETE CASCADE,
+    embedding vector(1536) NOT NULL,
+    chunk_text text NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- HNSW Cosine Similarity Vector search indices (pgvector)
 CREATE INDEX IF NOT EXISTS idx_recipe_embeddings_vector ON recipe_embeddings USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS idx_agent_memory_embeddings_vector ON agent_memory_embeddings USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS idx_ingredient_embeddings_vector ON ingredient_embeddings USING hnsw (embedding vector_cosine_ops);
+
