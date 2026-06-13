@@ -2,9 +2,9 @@ use sqlx::{PgPool, query, query_scalar};
 use uuid::Uuid;
 
 use crate::common::AppResult;
-use crate::common::id::{UserId, RecipeId, IngredientId, FoodLogId};
+use crate::common::id::{UserId, RecipeId, IngredientId, FoodLogId, IngredientPortionId};
 use crate::recipe::models::{
-    Ingredient, Recipe, RecipeIngredient, RecipeIngredientDetail, RecipeWithIngredients, FoodLog,
+    Ingredient, Recipe, RecipeIngredient, RecipeIngredientDetail, RecipeWithIngredients, FoodLog, IngredientPortion,
 };
 use crate::recipe::repository::RecipeRepository;
 
@@ -24,8 +24,8 @@ impl RecipeRepository for PgRecipeRepository {
         let raw_id: Uuid = ing.id.into();
         let res = query!(
             r#"
-            INSERT INTO ingredients (id, name, description, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g, sodium_mg_per_100g, micronutrients, estimated_cost_per_100g, price_currency, barcode, is_verified)
-            VALUES ($1, $2, $3, $4::float8, $5::float8, $6::float8, $7::float8, $8::float8, $9::float8, $10, $11::float8, $12, $13, $14)
+            INSERT INTO ingredients (id, name, description, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g, sodium_mg_per_100g, micronutrients, estimated_cost_per_100g, price_currency, barcode, is_verified, food_code, primary_source)
+            VALUES ($1, $2, $3, $4::float8, $5::float8, $6::float8, $7::float8, $8::float8, $9::float8, $10, $11::float8, $12, $13, $14, $15, $16)
             RETURNING
                 id as "id: IngredientId",
                 name,
@@ -41,6 +41,8 @@ impl RecipeRepository for PgRecipeRepository {
                 price_currency,
                 barcode,
                 is_verified,
+                food_code,
+                primary_source,
                 created_at,
                 updated_at
             "#,
@@ -57,7 +59,9 @@ impl RecipeRepository for PgRecipeRepository {
             ing.estimated_cost_per_100g,
             ing.price_currency,
             ing.barcode,
-            ing.is_verified
+            ing.is_verified,
+            ing.food_code,
+            ing.primary_source
         )
         .fetch_one(&self.pool)
         .await?;
@@ -77,6 +81,8 @@ impl RecipeRepository for PgRecipeRepository {
             price_currency: res.price_currency,
             barcode: res.barcode,
             is_verified: res.is_verified,
+            food_code: res.food_code,
+            primary_source: res.primary_source,
             created_at: res.created_at,
             updated_at: res.updated_at,
         })
@@ -101,6 +107,8 @@ impl RecipeRepository for PgRecipeRepository {
                 price_currency,
                 barcode,
                 is_verified,
+                food_code,
+                primary_source,
                 created_at,
                 updated_at
             FROM ingredients
@@ -126,6 +134,8 @@ impl RecipeRepository for PgRecipeRepository {
             price_currency: r.price_currency,
             barcode: r.barcode,
             is_verified: r.is_verified,
+            food_code: r.food_code,
+            primary_source: r.primary_source,
             created_at: r.created_at,
             updated_at: r.updated_at,
         }))
@@ -161,6 +171,8 @@ impl RecipeRepository for PgRecipeRepository {
                 price_currency,
                 barcode,
                 is_verified,
+                food_code,
+                primary_source,
                 created_at,
                 updated_at
             FROM ingredients
@@ -192,12 +204,82 @@ impl RecipeRepository for PgRecipeRepository {
                 price_currency: r.price_currency,
                 barcode: r.barcode,
                 is_verified: r.is_verified,
+                food_code: r.food_code,
+                primary_source: r.primary_source,
                 created_at: r.created_at,
                 updated_at: r.updated_at,
             })
             .collect();
 
         Ok((ingredients, total))
+    }
+
+    async fn add_ingredient_portion(&self, portion: IngredientPortion) -> AppResult<IngredientPortion> {
+        let raw_id: Uuid = portion.id.into();
+        let raw_ingredient_id: Uuid = portion.ingredient_id.into();
+        let res = query!(
+            r#"
+            INSERT INTO ingredient_portions (id, ingredient_id, serving_unit, grams_equivalent)
+            VALUES ($1, $2, $3, $4::float8)
+            RETURNING
+                id as "id: IngredientPortionId",
+                ingredient_id as "ingredient_id: IngredientId",
+                serving_unit,
+                grams_equivalent::float8 as "grams_equivalent!",
+                created_at,
+                updated_at
+            "#,
+            raw_id,
+            raw_ingredient_id,
+            portion.serving_unit,
+            portion.grams_equivalent
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(IngredientPortion {
+            id: res.id,
+            ingredient_id: res.ingredient_id,
+            serving_unit: res.serving_unit,
+            grams_equivalent: res.grams_equivalent,
+            created_at: res.created_at,
+            updated_at: res.updated_at,
+        })
+    }
+
+    async fn get_ingredient_portions(&self, ingredient_id: IngredientId) -> AppResult<Vec<IngredientPortion>> {
+        let raw_ingredient_id: Uuid = ingredient_id.into();
+        let rows = query!(
+            r#"
+            SELECT
+                id as "id: IngredientPortionId",
+                ingredient_id as "ingredient_id: IngredientId",
+                serving_unit,
+                grams_equivalent::float8 as "grams_equivalent!",
+                created_at,
+                updated_at
+            FROM ingredient_portions
+            WHERE ingredient_id = $1
+            ORDER BY serving_unit ASC
+            "#,
+            raw_ingredient_id
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let portions = rows
+            .into_iter()
+            .map(|r| IngredientPortion {
+                id: r.id,
+                ingredient_id: r.ingredient_id,
+                serving_unit: r.serving_unit,
+                grams_equivalent: r.grams_equivalent,
+                created_at: r.created_at,
+                updated_at: r.updated_at,
+            })
+            .collect();
+
+        Ok(portions)
     }
 
     async fn create_recipe(&self, recipe: Recipe, ingredients: Vec<RecipeIngredient>) -> AppResult<RecipeWithIngredients> {
@@ -525,8 +607,8 @@ impl RecipeRepository for PgRecipeRepository {
         let raw_id: Uuid = log.id.into();
         let res = query!(
             r#"
-            INSERT INTO food_logs (id, user_id, logged_at, meal_type, recipe_id, ingredient_id, custom_food_name, quantity, unit, calories, protein, carbs, fats)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::float8, $9, $10::float8, $11::float8, $12::float8, $13::float8)
+            INSERT INTO food_logs (id, user_id, logged_at, meal_type, recipe_id, ingredient_id, custom_food_name, quantity, unit, calories, protein, carbs, fats, micronutrients_snapshot)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::float8, $9, $10::float8, $11::float8, $12::float8, $13::float8, $14)
             RETURNING
                 id as "id: FoodLogId",
                 user_id as "user_id: UserId",
@@ -541,6 +623,7 @@ impl RecipeRepository for PgRecipeRepository {
                 protein::float8 as "protein!",
                 carbs::float8 as "carbs!",
                 fats::float8 as "fats!",
+                micronutrients_snapshot,
                 created_at
             "#,
             raw_id,
@@ -555,7 +638,8 @@ impl RecipeRepository for PgRecipeRepository {
             log.calories,
             log.protein,
             log.carbs,
-            log.fats
+            log.fats,
+            log.micronutrients_snapshot
         )
         .fetch_one(&self.pool)
         .await?;
@@ -574,6 +658,7 @@ impl RecipeRepository for PgRecipeRepository {
             protein: res.protein,
             carbs: res.carbs,
             fats: res.fats,
+            micronutrients_snapshot: res.micronutrients_snapshot,
             created_at: res.created_at,
         })
     }
@@ -606,6 +691,7 @@ impl RecipeRepository for PgRecipeRepository {
                 protein::float8 as "protein!",
                 carbs::float8 as "carbs!",
                 fats::float8 as "fats!",
+                micronutrients_snapshot,
                 created_at
             FROM food_logs
             WHERE user_id = $1
@@ -635,6 +721,7 @@ impl RecipeRepository for PgRecipeRepository {
                 protein: r.protein,
                 carbs: r.carbs,
                 fats: r.fats,
+                micronutrients_snapshot: r.micronutrients_snapshot,
                 created_at: r.created_at,
             })
             .collect();

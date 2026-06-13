@@ -10,14 +10,26 @@ CREATE TABLE IF NOT EXISTS ingredients (
     carbs_per_100g numeric(5,2) NOT NULL,
     fat_per_100g numeric(5,2) NOT NULL,
     fiber_per_100g numeric(5,2) NOT NULL DEFAULT 0.00,
-    sodium_mg_per_100g numeric(6,2) NOT NULL DEFAULT 0.00,
+    sodium_mg_per_100g numeric(10,2) NOT NULL DEFAULT 0.00,
     micronutrients jsonb NOT NULL DEFAULT '{}'::jsonb,
     estimated_cost_per_100g numeric(6,2) NOT NULL DEFAULT 0.00, -- Required for Budget Agent cost optimization
     price_currency text NOT NULL DEFAULT 'INR',
     barcode text,
     is_verified boolean NOT NULL DEFAULT false,
+    food_code text UNIQUE,
+    primary_source text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ingredient_portions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    ingredient_id uuid NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    serving_unit text NOT NULL, -- e.g., 'slice', 'cup', 'piece'
+    grams_equivalent numeric(6,2) NOT NULL CHECK (grams_equivalent > 0),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(ingredient_id, serving_unit)
 );
 
 CREATE TABLE IF NOT EXISTS recipes (
@@ -61,5 +73,6 @@ CREATE TABLE IF NOT EXISTS food_logs (
     protein numeric(5,2) NOT NULL,
     carbs numeric(5,2) NOT NULL,
     fats numeric(5,2) NOT NULL,
+    micronutrients_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
     created_at timestamptz NOT NULL DEFAULT now()
 );

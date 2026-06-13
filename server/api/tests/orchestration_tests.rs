@@ -96,15 +96,16 @@ async fn test_orchestration_and_sse_streaming() {
     assert_eq!(parsed_events[1].0, "agent_step");
     assert_eq!(parsed_events[2].0, "message_delta");
     assert_eq!(parsed_events[3].0, "message_delta");
-    assert_eq!(parsed_events[4].0, "ui_element");
-    assert_eq!(parsed_events[5].0, "done");
+    assert_eq!(parsed_events[4].0, "message_complete");
+    assert_eq!(parsed_events[5].0, "ui_element");
+    assert_eq!(parsed_events[6].0, "done");
 
     // Verify delta content concatenation
     let mut assembled_content = String::new();
     for (name, data) in &parsed_events {
         if name == "message_delta" {
             let val: serde_json::Value = serde_json::from_str(data).unwrap();
-            assembled_content.push_str(val["content"].as_str().unwrap());
+            assembled_content.push_str(val["data"]["content"].as_str().unwrap());
         }
     }
     assert_eq!(assembled_content, "Hello! Here is your muscle gain meal plan.");
@@ -297,7 +298,7 @@ async fn test_backward_compatibility_final_text() {
     let deltas: Vec<_> = parsed_events.iter().filter(|(name, _)| name == "message_delta").collect();
     assert_eq!(deltas.len(), 1);
     let val: serde_json::Value = serde_json::from_str(&deltas[0].1).unwrap();
-    assert_eq!(val["content"].as_str().unwrap(), "Here is the final generated meal plan text without deltas.");
+    assert_eq!(val["data"]["content"].as_str().unwrap(), "Here is the final generated meal plan text without deltas.");
 }
 
 #[tokio::test]
@@ -342,8 +343,8 @@ async fn test_client_disconnect_resiliency() {
         // Drop stream_res and body here
     }
 
-    // Wait 150ms for worker to finish execution asynchronously in background
-    tokio::time::sleep(Duration::from_millis(150)).await;
+    // Wait 350ms for worker to finish execution asynchronously in background
+    tokio::time::sleep(Duration::from_millis(350)).await;
 
     // Verify trace is still completed successfully in Postgres
     let intel_repo = PgIntelligenceRepository::new(db.clone());

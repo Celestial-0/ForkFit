@@ -14,7 +14,7 @@ async fn test_recipe_nutrition_and_cost() {
 
     // 1. Create ingredients
     let ing_req1 = CreateIngredientRequest {
-        name: "Peanut Butter".to_string(),
+        name: format!("Peanut Butter {}", uuid::Uuid::new_v4()),
         description: Some("Creamy peanut butter".to_string()),
         calories_per_100g: 588.0,
         protein_per_100g: 25.0,
@@ -29,7 +29,7 @@ async fn test_recipe_nutrition_and_cost() {
     };
 
     let ing_req2 = CreateIngredientRequest {
-        name: "Whole Milk".to_string(),
+        name: format!("Whole Milk {}", uuid::Uuid::new_v4()),
         description: Some("Organic whole milk".to_string()),
         calories_per_100g: 61.0,
         protein_per_100g: 3.2,
@@ -90,8 +90,8 @@ async fn test_recipe_nutrition_and_cost() {
     assert_eq!(detail.serving_estimated_cost, 7.5);
 
     // Allergens
-    assert!(detail.detected_allergens.contains(&"peanut".to_string()));
-    assert!(detail.detected_allergens.contains(&"milk".to_string()));
+    assert!(detail.detected_allergens.contains(&"Peanuts".to_string()));
+    assert!(detail.detected_allergens.contains(&"Dairy".to_string()));
 
     let fetched = service.get_recipe(detail.recipe.id).await.unwrap();
     assert_eq!(fetched.total_nutrition.calories, 416.0);

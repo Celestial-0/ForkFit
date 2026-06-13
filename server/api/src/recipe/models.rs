@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::common::id::{UserId, RecipeId, IngredientId, FoodLogId};
+use crate::common::id::{UserId, RecipeId, IngredientId, FoodLogId, IngredientPortionId};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ingredient {
@@ -19,6 +19,18 @@ pub struct Ingredient {
     pub price_currency: String,
     pub barcode: Option<String>,
     pub is_verified: bool,
+    pub food_code: Option<String>,
+    pub primary_source: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IngredientPortion {
+    pub id: IngredientPortionId,
+    pub ingredient_id: IngredientId,
+    pub serving_unit: String,
+    pub grams_equivalent: f64,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -89,5 +101,6 @@ pub struct FoodLog {
     pub protein: f64,
     pub carbs: f64,
     pub fats: f64,
+    pub micronutrients_snapshot: serde_json::Value,
     pub created_at: DateTime<Utc>,
 }

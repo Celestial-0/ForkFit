@@ -1,12 +1,14 @@
 use crate::common::AppResult;
 use crate::common::id::{UserId, RecipeId, IngredientId};
-use super::models::{Ingredient, Recipe, RecipeIngredient, RecipeWithIngredients, FoodLog};
+use super::models::{Ingredient, Recipe, RecipeIngredient, RecipeWithIngredients, FoodLog, IngredientPortion};
 
 pub trait RecipeRepository: Send + Sync {
     // Ingredients
     async fn create_ingredient(&self, ing: Ingredient) -> AppResult<Ingredient>;
     async fn get_ingredient(&self, id: IngredientId) -> AppResult<Option<Ingredient>>;
     async fn search_ingredients(&self, query: &str, page: u64, per_page: u64) -> AppResult<(Vec<Ingredient>, u64)>;
+    async fn add_ingredient_portion(&self, portion: IngredientPortion) -> AppResult<IngredientPortion>;
+    async fn get_ingredient_portions(&self, ingredient_id: IngredientId) -> AppResult<Vec<IngredientPortion>>;
 
     // Recipes
     async fn create_recipe(&self, recipe: Recipe, ingredients: Vec<RecipeIngredient>) -> AppResult<RecipeWithIngredients>;

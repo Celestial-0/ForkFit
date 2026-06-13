@@ -19,7 +19,7 @@ async fn test_active_plan_deactivation() {
 
     // 1. Create a dummy ingredient and recipe
     let ing_req = CreateIngredientRequest {
-        name: "Egg".to_string(),
+        name: format!("Egg {}", uuid::Uuid::new_v4()),
         description: Some("Whole egg".to_string()),
         calories_per_100g: 143.0,
         protein_per_100g: 13.0,
