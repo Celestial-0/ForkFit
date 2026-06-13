@@ -1,4 +1,10 @@
 import { Landing } from "@/components/core/landing"
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "ForkFit",
+  description: "",
+};
 
 export default function Page() {
   return (
