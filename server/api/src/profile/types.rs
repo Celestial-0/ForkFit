@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 use crate::common::id::{UserId, GoalId, BiometricLogId, WorkoutLogId};
-use super::models::{Profile, UserPreference, MedicalSafetyProfile, BiometricLog, WorkoutLog, UserGoal};
+use super::models::{UserPreference, MedicalSafetyProfile, BiometricLog, WorkoutLog, UserGoal};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateProfileRequest {
@@ -16,6 +16,9 @@ pub struct UpdateProfileRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfileResponse {
     pub user_id: UserId,
+    pub email: String,
+    pub email_verified: bool,
+    pub status: String,
     pub full_name: Option<String>,
     pub avatar_url: Option<String>,
     pub gender: Option<String>,
@@ -23,21 +26,6 @@ pub struct ProfileResponse {
     pub timezone: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-}
-
-impl From<Profile> for ProfileResponse {
-    fn from(p: Profile) -> Self {
-        Self {
-            user_id: p.user_id,
-            full_name: p.full_name,
-            avatar_url: p.avatar_url,
-            gender: p.gender,
-            dob: p.dob,
-            timezone: p.timezone,
-            created_at: p.created_at,
-            updated_at: p.updated_at,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
