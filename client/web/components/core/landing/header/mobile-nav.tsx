@@ -1,13 +1,19 @@
 import { cn } from "@/lib/utils";
 import React from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Portal, PortalBackdrop } from "./portal";
 import { navLinks } from "./index";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, Menu01Icon } from "@hugeicons/core-free-icons";
+import { useHydratedStore } from "@/hooks/use-hydrated-store";
+import { useAuthStore } from "@/store/auth-store";
 
 export function MobileNav() {
 	const [open, setOpen] = React.useState(false);
+	const isAuthenticated = useHydratedStore(useAuthStore, (state) => state.isAuthenticated);
+
+	const showAuth = isAuthenticated;
 
 	return (
 		<div className="md:hidden">
@@ -38,15 +44,39 @@ export function MobileNav() {
 					>
 						<div className="grid gap-y-2">
 							{navLinks.map((link) => (
-								<Button className="justify-start" key={link.label} variant="ghost" render={<a href={link.href} />} nativeButton={false}>{link.label}</Button>
+								<Button
+									className="justify-start"
+									key={link.label}
+									variant="ghost"
+									render={<a href={link.href} />}
+									nativeButton={false}
+									onClick={() => setOpen(false)}
+								>
+									{link.label}
+								</Button>
 							))}
 						</div>
-						<div className="mt-12 flex flex-col gap-2">
-							<Button className="w-full" variant="outline">
-								Sign In
-							</Button>
-							<Button className="w-full">Get Started</Button>
-						</div>
+						{!showAuth && (
+							<div className="mt-12 flex flex-col gap-2">
+								<Button
+									className="w-full"
+									variant="outline"
+									render={<Link href="/auth" />}
+									nativeButton={false}
+									onClick={() => setOpen(false)}
+								>
+									Sign In
+								</Button>
+								<Button
+									className="w-full"
+									render={<Link href="/auth" />}
+									nativeButton={false}
+									onClick={() => setOpen(false)}
+								>
+									Get Started
+								</Button>
+							</div>
+						)}
 					</div>
 				</Portal>
 			)}
