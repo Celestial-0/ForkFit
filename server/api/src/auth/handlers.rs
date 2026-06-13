@@ -373,12 +373,6 @@ pub async fn signout_all(
     Ok(Json(serde_json::json!({ "signed_out": true })))
 }
 
-pub async fn me(user: CurrentUser) -> AppResult<Json<MeResponse>> {
-    Ok(Json(MeResponse {
-        user: user.user_response(),
-    }))
-}
-
 pub async fn send_verification_otp(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<EmailRequest>,

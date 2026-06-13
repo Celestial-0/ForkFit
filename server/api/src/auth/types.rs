@@ -51,10 +51,6 @@ pub struct AuthResponse {
     pub user: UserResponse,
 }
 
-#[derive(Debug, Serialize)]
-pub struct MeResponse {
-    pub user: UserResponse,
-}
 
 #[derive(Debug, Serialize)]
 pub struct SessionResponse {

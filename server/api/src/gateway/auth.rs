@@ -19,7 +19,6 @@ fn auth_router() -> Router<Arc<AppState>> {
         .route("/signin", post(handlers::signin))
         .route("/signout", post(handlers::signout))
         .route("/signout-all", post(handlers::signout_all))
-        .route("/me", get(handlers::me))
         .route("/send-verification-otp", post(handlers::send_verification_otp))
         .route("/verify-email", post(handlers::verify_email))
         .route("/forgot-password", post(handlers::forgot_password))

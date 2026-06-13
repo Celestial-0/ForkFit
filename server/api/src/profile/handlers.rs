@@ -20,7 +20,19 @@ pub async fn get_profile(
     let repo = PgProfileRepository::new(state.db.clone());
     let service = ProfileService::new(repo);
     let profile = service.get_profile(user.id).await?;
-    Ok(Json(ProfileResponse::from(profile)))
+    Ok(Json(ProfileResponse {
+        user_id: profile.user_id,
+        email: user.email.clone(),
+        email_verified: user.email_verified,
+        status: user.status.clone(),
+        full_name: profile.full_name,
+        avatar_url: profile.avatar_url,
+        gender: profile.gender,
+        dob: profile.dob,
+        timezone: profile.timezone,
+        created_at: profile.created_at,
+        updated_at: profile.updated_at,
+    }))
 }
 
 pub async fn update_profile(
@@ -31,7 +43,19 @@ pub async fn update_profile(
     let repo = PgProfileRepository::new(state.db.clone());
     let service = ProfileService::new(repo);
     let profile = service.update_profile(user.id, payload).await?;
-    Ok(Json(ProfileResponse::from(profile)))
+    Ok(Json(ProfileResponse {
+        user_id: profile.user_id,
+        email: user.email.clone(),
+        email_verified: user.email_verified,
+        status: user.status.clone(),
+        full_name: profile.full_name,
+        avatar_url: profile.avatar_url,
+        gender: profile.gender,
+        dob: profile.dob,
+        timezone: profile.timezone,
+        created_at: profile.created_at,
+        updated_at: profile.updated_at,
+    }))
 }
 
 pub async fn get_preferences(
