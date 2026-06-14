@@ -1,0 +1,34 @@
+---
+title: Nutrition Agent
+description: Nutrition Agent calculating macro targets and scoring recipe nutritional adherence.
+---
+
+# Nutrition Agent
+
+The **Nutrition Agent** calculates daily caloric and macronutrient targets and scores candidate recipes based on their nutritional balance.
+
+Implementation: [nutrition.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/nutrition.py)
+
+---
+
+## 1. Targets Calculation
+
+The agent defines the user's daily macronutrient targets:
+* **Predefined Targets**: Uses the `macro_targets` context object directly if it has been specified by the user.
+* **Calculated Targets**: If not specified, the agent performs calculations using BMR and TDEE formulas:
+  1. **BMR**: Computes BMR based on body weight, height, age, and gender using the Mifflin-St Jeor equation.
+  2. **TDEE**: Multiplies BMR by the multiplier for the user's activity level (sedentary, light, moderate, active, very active).
+  3. **Macro Split**: Adjusts TDEE calories based on fitness goals (e.g. fat loss deficit: -500 kcal; muscle gain surplus: +300 kcal) and determines macro targets using standard ratios:
+     * **Muscle Gain**: 30% Protein, 45% Carbs, 25% Fat.
+     * **Fat Loss**: 35% Protein, 35% Carbs, 30% Fat.
+     * **Maintenance**: 25% Protein, 50% Carbs, 25% Fat.
+
+---
+
+## 2. Recipe Adherence Scoring
+
+The agent evaluates how well each candidate recipe matches the calculated macro splits:
+1. Loads full ingredient specifications for each recipe from the database.
+2. Sums the total macros (calories, protein, carbs, fats) for the recipe using `calculate_recipe_nutrition`.
+3. Scores recipe adherence against the daily macro targets using `score_plan_adherence`.
+4. Sorts the list of scored recipes in descending order of their adherence score.

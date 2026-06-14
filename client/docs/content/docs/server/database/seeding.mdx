@@ -1,0 +1,76 @@
+---
+title: Database Seeding (Anuvaad INDB)
+description: Overview of the database seeding mechanism using the Anuvaad INDB Indian food dataset.
+---
+
+# Database Seeding (Anuvaad INDB)
+
+This section explains the ingestion process for seeding the ForkFit database with standard Indian nutrition data.
+
+Ingestion script: [seed_anuvaad.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/scripts/seed_anuvaad.sql)  
+Source dataset: [Anuvaad_INDB_2024.11.csv](file:///c:/Users/300079/CapCode/ForkFit/server/db/seeds/Anuvaad_INDB_2024.11.csv)
+
+---
+
+## 1. Raw Seeding Datasets
+
+The raw data is stored in the following source files:
+* **`Anuvaad_INDB_2024.11.csv`**: CSV table containing detailed food components.
+* **`Anuvaad_INDB_2024.11.xlsx`**: Excel version of the same dataset.
+
+This dataset compiles energy (kcal), carbohydrates (g), protein (g), fat (g), fiber (g), sodium (mg), and a wide range of micronutrients (vitamins, minerals) for hundreds of Indian ingredients.
+
+---
+
+## 2. Ingestion Flow
+
+The SQL ingestion script performs the following operations inside a single transactional block:
+
+<Mermaid
+  chart="
+graph TD
+    A[Start seed_anuvaad.sql] --> B[Create temp_csv_nutrition temporary table]
+    B --> C[COPY data from Anuvaad_INDB_2024.11.csv into temp_csv_nutrition]
+    C --> D[Insert/Update ingredients table]
+    D --> E[Insert/Update ingredient_portions table]
+    E --> F[Commit Transaction]"
+/>
+
+### Ingestion Script Highlights
+
+1. **Staging**: Creates a temporary staging table named `temp_csv_nutrition` that mirrors the CSV columns exactly.
+2. **Ingestion**: Uses PostgreSQL `\copy` or `COPY` command to parse the raw CSV:
+   ```sql
+   \copy temp_csv_nutrition FROM :csv_file WITH CSV HEADER DELIMITER ',' ESCAPE '"' QUOTE '"' ENCODING 'UTF8';
+   ```
+3. **Inserting Ingredients**: Maps the staging data to the [ingredients](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql#L4) table:
+   * Maps macronutrients directly (e.g. `carb_g`, `protein_g`, `fat_g`, `fibre_g`, `sodium_mg`).
+   * Bundles all other columns (vitamins, minerals, cholesterol, sugars, etc.) into the `micronutrients` JSONB column.
+   * Updates existing entries on conflict using `ON CONFLICT (food_code) DO UPDATE`.
+4. **Inserting Portions**: Maps portion equivalents (e.g. serving units like 'slice' or 'cup' to grams) to the [ingredient_portions](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql#L25) table.
+
+---
+
+## 3. How to Run the Seeding Script
+
+Run the seeding script via the terminal using the `psql` command.
+
+### Local Command (relative path)
+Ensure your working directory is the folder containing the script:
+```bash
+cd server/db/scripts
+psql "postgres://yash:yash1234@localhost:5432/forkfit" -f seed_anuvaad.sql
+```
+
+### Dynamic CSV Path Command
+You can run the script from any folder by specifying the path to the CSV file dynamically:
+```bash
+psql "postgres://yash:yash1234@localhost:5432/forkfit" -v csv_file='server/db/seeds/Anuvaad_INDB_2024.11.csv' -f server/db/scripts/seed_anuvaad.sql
+```
+
+### Docker Execution Command
+If running PostgreSQL inside a Docker container:
+```bash
+docker cp server/db postgres:/tmp/db
+docker exec -i postgres psql -U yash -d forkfit -f /tmp/db/scripts/seed_anuvaad.sql
+```

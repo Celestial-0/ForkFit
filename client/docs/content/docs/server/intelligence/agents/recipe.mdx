@@ -1,0 +1,36 @@
+---
+title: Recipe Selection Agent
+description: Recipe Agent filtering candidate lists and selecting the optimal recipe subset.
+---
+
+# Recipe Selection Agent
+
+The **Recipe Selection Agent** filters the candidate recipes by applying safety and cultural exclusions and queries the LLM to select the best subset of recipes to compose the user's plan.
+
+Implementation: [recipe.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/recipe.py)
+
+---
+
+## 1. Candidate List Filtering
+
+The agent filters candidate recipes by checking constraints from previous stages:
+1. Identifies candidates that are both **safe** (passed the Safety Agent's allergen audits) and **culturally aligned** (passed the Culture Agent's diet type checks).
+2. If this intersection yields an empty list, it falls back to using all candidates to avoid blocking execution.
+
+---
+
+## 2. Selection & Optimization
+
+For each filtered candidate, the agent fetches its ingredients, aggregates its total cost, and calculates its macro distribution.
+
+The agent then queries the chat model, utilizing a structured Pydantic schema (`RecipeSelectionDecision`) to select the best recipes:
+
+* **Pydantic Model Schema**:
+  ```python
+  class RecipeSelectionDecision(BaseModel):
+      selected_recipe_ids: list[str]  # Selected recipe UUIDs
+      alternatives: list[str]         # Alternative suggestions
+      reasoning: str                  # Selection reasoning
+  ```
+
+* **Fallback Logic**: If the structured LLM call fails, the agent falls back to selecting the first three candidate recipes in the list to populate the plan.

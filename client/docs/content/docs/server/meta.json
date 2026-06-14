@@ -1,5 +1,6 @@
 {
   "title": "Server",
+  "defaultOpen": true,
   "pages": [
     "index",
     "database",

@@ -1,0 +1,77 @@
+---
+title: System Audits & Indexes
+description: Database tables governing user-action security logs and performant relational / pgvector HNSW indices.
+---
+
+# System Audits & Indexes
+
+This module holds audit trail logging and defines critical database-level optimization indexes to facilitate high-speed query execution.
+
+Migrated by: [00008_create_audit_logs_and_indexing.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00008_create_audit_logs_and_indexing.sql)
+
+---
+
+## 1. Security Audit Logging
+
+### `audit_logs`
+Saves low-level user interactions and security-sensitive event histories.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Audit log identifier. |
+  | `actor_user_id` | `uuid` | `REFERENCES users(id) ON DELETE SET NULL` | - | User trigger ID. |
+  | `session_id` | `uuid` | `REFERENCES sessions(id) ON DELETE SET NULL` | - | Active session context ID. |
+  | `action` | `text` | `NOT NULL` | - | Action descriptor (e.g. `'auth.login'`, `'recipe.create'`). |
+  | `resource_type` | `text` | `NOT NULL` | - | Target resource group (e.g. `'recipes'`). |
+  | `resource_id` | `uuid` | - | - | UUID of the targeted resource. |
+  | `ip_address` | `inet` | - | - | Request client IP address. |
+  | `user_agent` | `text` | - | - | Request client browser user-agent. |
+  | `metadata` | `jsonb` | `NOT NULL` | `'{}'` | Context metadata tracking modified parameters. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Log creation timestamp. |
+
+---
+
+## 2. Performance Indexes
+
+The system registers specific database indexes to accelerate critical query lookup paths.
+
+### Identity & Authentication
+* **`idx_sessions_user_id`**: Accelerates looking up sessions for a user.
+* **`idx_sessions_active`**: Filters active, non-expired sessions for a user:
+  ```sql
+  CREATE INDEX idx_sessions_active ON sessions(user_id, expires_at) WHERE revoked_at IS NULL;
+  ```
+* **`idx_oauth_accounts_user_id`**: Accelerates checking linked OAuth accounts.
+* **`idx_otp_verifications_email`**: Quick lookup of the latest OTP code dispatched to an email:
+  ```sql
+  CREATE INDEX idx_otp_verifications_email ON otp_verifications(email, purpose, created_at DESC);
+  ```
+
+### Profiles & Historical Logs
+* **`idx_user_goals_active`**: Speeds up fetching the user's active goals:
+  ```sql
+  CREATE INDEX idx_user_goals_active ON user_goals(user_id) WHERE is_active = true;
+  ```
+* **`idx_biometric_logs_user_date`**: Accelerates loading historical biometric weight/height charts.
+* **`idx_workout_logs_user_date`**: Speeds up loading historical workout logs.
+
+### Recipes, Nutrition & Lists
+* **`idx_recipes_owner`**: Fetches user-created recipes.
+* **`idx_recipe_ingredients_ing`**: Tracks which recipes contain a specific ingredient.
+* **`idx_food_logs_user_date`**: Speeds up query processing of daily user food logs.
+* **`idx_meal_plan_items_date`**: Speeds up loading scheduled meal calendar pages.
+* **`idx_pantry_items_user`**: Speeds up pulling pantry stock lists.
+* **`idx_shopping_list_items_list`**: Speeds up loading list items.
+
+---
+
+## 3. Vector HNSW Search Indices
+
+Cosine Similarity indices are configured using **pgvector**'s Hierarchical Navigable Small World (HNSW) algorithm to enable high-speed vector searches:
+
+```sql
+CREATE INDEX idx_recipe_embeddings_vector ON recipe_embeddings USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX idx_agent_memory_embeddings_vector ON agent_memory_embeddings USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX idx_ingredient_embeddings_vector ON ingredient_embeddings USING hnsw (embedding vector_cosine_ops);
+```

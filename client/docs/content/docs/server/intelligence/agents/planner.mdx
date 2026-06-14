@@ -1,0 +1,39 @@
+---
+title: Planner Agent
+description: Cognitive Planner Agent deciding the optimal agent execution path for user requests.
+---
+
+# Planner Agent
+
+The **Planner Agent** is the entry node in the ForkFit graph pipeline. It analyzes the user's input prompt and hydrated context to determine which specialist agents are required to execute the request.
+
+Implementation: [planner.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/planner.py)
+
+---
+
+## 1. Node Execution & Decisions
+
+When a request is initiated, the Planner parses the context properties (such as the presence of allergies, budget limits, or workout entries) and matches them against agent capabilities:
+
+* **Safety Agent**: Required if the user has active allergies or medical conditions in their profile.
+* **Nutrition Agent**: Required if the request involves generating daily targets or diet planning.
+* **Budget Agent**: Required if the user has a daily budget threshold or explicitly requests cost reductions.
+* **Culture Agent**: Required if the user has specified preferred cuisines or dietary restrictions (e.g. Jain, Vegetarian).
+* **Recipe Agent**: Required for any recipe search or selection.
+* **Calendar Agent**: Required if meals need to be scheduled on dates or workout adjustments are present.
+* **Shopping Agent**: Required to aggregate grocery requirements and check pantry stocks.
+
+---
+
+## 2. LLM Configuration
+
+The Planner invokes the configured chat model with a structured Pydantic model (`PlannerDecision`) to enforce schema constraints:
+
+* **Pydantic Model Schema**:
+  ```python
+  class PlannerDecision(BaseModel):
+      required_agents: list[str]  # Sub-list of ['safety', 'nutrition', 'budget', 'culture', 'recipe', 'calendar', 'shopping']
+      execution_plan: str         # Text detailing the routing reasoning
+  ```
+
+* **Fallback Logic**: If the LLM structured query fails, the Planner catches the exception, registers error details, and falls back to a default list: `['safety', 'nutrition', 'recipe', 'calendar', 'shopping']`.

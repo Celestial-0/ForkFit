@@ -1,0 +1,28 @@
+---
+title: Culture Agent
+description: Culture Agent filtering candidate recipes by cuisine styles and strict dietary categories.
+---
+
+# Culture Agent
+
+The **Culture Agent** filters candidate recipes to ensure they align with the user's cuisine preferences and dietary requirements (e.g. Vegetarian, Vegan, Jain).
+
+Implementation: [culture.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/culture.py)
+
+---
+
+## 1. Preferences Filtering
+
+The agent evaluates candidate recipes against cultural and dietary constraints:
+
+* **Cuisine Matching**: If a preferred cuisine is defined in the user's profile (e.g. `'south indian'`, `'italian'`), the agent checks if the recipe's cuisine metadata contains the preference string.
+* **Dietary Exclusions**: Inspects the user's active diet model (such as `'vegetarian'`, `'vegan'`, or `'jain'`) and checks if the recipe contains corresponding compliance tags:
+  * **Vegetarian**: Recipe must contain `'vegetarian'` or `'vegan'` tags.
+  * **Vegan**: Recipe must contain the `'vegan'` tag.
+  * **Jain**: Recipe must contain the `'jain'` tag.
+
+---
+
+## 2. Fallback Logic
+
+If the strict filtering process discards all candidate recipes, the agent logs a warning and falls back to keeping all candidates, registering the matching failures as warnings instead of blocking them. This ensures the pipeline does not fail if context data is sparse.

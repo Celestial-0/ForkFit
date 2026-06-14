@@ -1,0 +1,93 @@
+---
+title: Profiles & Biometrics
+description: Database tables tracking user profile metadata, biometrics logs, workouts, goals, and medical safety.
+---
+
+# Profiles & Biometrics
+
+This module holds relational schemas related to user properties (names, DOB), UI preferences, biometric tracking values, workouts, goals, and allergies.
+
+Migrated by: [00002_create_profiles_and_biometrics.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00002_create_profiles_and_biometrics.sql)
+
+---
+
+## 1. Profiles & Preferences
+
+### `profiles`
+Holds general user details.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `user_id` | `uuid` | `PRIMARY KEY` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `full_name` | `text` | - | - | Display name of the user. |
+  | `avatar_url` | `text` | - | - | URL to profile picture. |
+  | `gender` | `text` | - | - | User biological gender (`'male'`, `'female'`). |
+  | `dob` | `date` | - | - | Date of birth. |
+  | `timezone` | `text` | - | `'UTC'` | User preferred timezone (e.g. `'Asia/Kolkata'`). |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Record creation timestamp. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Record change timestamp. |
+
+### `user_preferences`
+Contains application configuration selections.
+
+* **Schema**: `user_id` (PRIMARY KEY), `theme` (default `'system'`), `language` (default `'en'`), `measurement_system` (default `'metric'`), `preferences` (JSONB for dynamic flags), `created_at`, `updated_at`.
+
+---
+
+## 2. Safety Profiles
+
+### `medical_safety_profiles`
+Maintains user medical parameters. This is audited during agent execution loops to guarantee nutritional plan safety.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `user_id` | `uuid` | `PRIMARY KEY` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `allergies` | `text[]` | `NOT NULL` | `'{}'` | String array list of allergies (e.g. `{'peanuts', 'eggs'}`). |
+  | `medical_conditions` | `text[]` | `NOT NULL` | `'{}'` | String array list of medical conditions. |
+  | `is_pregnant` | `boolean` | `NOT NULL` | `false` | True if the user is pregnant. |
+  | `is_lactating` | `boolean` | `NOT NULL` | `false` | True if the user is lactating. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Last update timestamp. |
+
+---
+
+## 3. Logs & Targets
+
+### `biometric_logs`
+Chronological logs of user metrics for progress tracking.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Unique log identifier. |
+  | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `logged_at` | `timestamptz` | `NOT NULL` | `now()` | Metric entry timestamp. |
+  | `metric_type` | `text` | `NOT NULL` | - | Target metric: `'weight_kg'`, `'height_cm'`, or `'body_fat_pct'`. |
+  | `value` | `numeric(5,2)` | `NOT NULL` | - | Value of the logged metric. |
+  | `notes` | `text` | - | - | Optional comments. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Creation timestamp. |
+
+### `workout_logs`
+Tracks physical activity logs and estimates calories burned.
+
+* **Schema**: `id` (PRIMARY KEY), `user_id` (foreign key users), `logged_at`, `activity_name` (e.g. `'Weightlifting'`), `duration_minutes`, `calories_burned` (default `0.00`), `notes`, `created_at`.
+
+### `user_goals`
+Active objectives configuration.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Unique goal identifier. |
+  | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `category` | `text` | `NOT NULL` | - | Goal class: `'nutrition'`, `'weight'`, or `'activity'`. |
+  | `target_type` | `text` | `NOT NULL` | - | Goal detail: `'weight_loss'`, `'calorie_surplus'`, `'macro_maintenance'`, or `'daily_steps'`. |
+  | `target_value` | `numeric(8,2)` | `NOT NULL` | - | Numerical target. |
+  | `unit` | `text` | `NOT NULL` | - | Metric unit (e.g. `'kg'`, `'kcal'`, `'steps'`). |
+  | `config` | `jsonb` | `NOT NULL` | `'{}'` | Specific limits config (e.g., `{"protein_g": 150}`). |
+  | `start_date` | `date` | `NOT NULL` | `CURRENT_DATE` | Goal activation date. |
+  | `target_date` | `date` | - | - | Target resolution date. |
+  | `is_active` | `boolean` | `NOT NULL` | `true` | True if the goal is currently active. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Record creation timestamp. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Record update timestamp. |

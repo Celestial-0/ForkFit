@@ -1,0 +1,32 @@
+---
+title: Visualization Agent
+description: Visualization Agent generating frontend UI component configs and text summaries.
+---
+
+# Visualization Agent
+
+The **Visualization Agent** compiles the final graph outputs. It generates JSON configurations for interactive frontend components (charts, schedules) and uses the LLM to write a conversational markdown summary.
+
+Implementation: [visualization.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/visualization.py)
+
+---
+
+## 1. Frontend UI Components
+
+The agent generates configuration specifications for React components:
+
+* **Daily Macronutrient Split (Doughnut Chart)**:
+  * Generates layout configuration (indexes, colors, values) to display average protein, carbohydrate, and fat values.
+* **Cost Summary (Bar Chart)**:
+  * Generates configuration comparing total shopping cost against pantry savings.
+* **Daily Schedule (Timeline)**:
+  * Generates a chronological daily event list showing scheduled meals and workout notes.
+
+---
+
+## 2. Plan Summary Synthesis
+
+The agent queries the chat model to write a user-facing overview of the plan:
+* Passes the daily schedules, total cost, pantry savings, and nutritional summaries.
+* Instructs the model to write a conversational explanation highlighting cost savings, target macro adherence, recipe highlights, and fitness coaching advice.
+* The output is streamed to the client as real-time markdown text tokens.

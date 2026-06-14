@@ -1,0 +1,29 @@
+---
+title: Consensus Agent
+description: Consensus Agent merging specialist outputs and resolving execution conflicts.
+---
+
+# Consensus Agent
+
+The **Consensus Agent** merges outputs from the various specialist agents (Safety, Nutrition, Budget, Calendar, Shopping) to resolve conflicts and compile a unified meal plan.
+
+Implementation: [consensus.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/consensus.py)
+
+---
+
+## 1. Conflict Resolution
+
+The agent cross-references safety and calendar schedules:
+* Identifies recipes in the calendar slots that match safety-blocked IDs.
+* **Resolution**: Removes the blocked recipe from the scheduled slot and updates the recipe title to *"SAFE SUBSTITUTE NEEDED (Blocked: \<Recipe Title\>)"*, setting the recipe ID to null.
+* Tracks the number of resolved conflicts.
+
+---
+
+## 2. Plan Adherence & Confidence Scoring
+
+The agent evaluates the plan's quality:
+* **Nutrition Summary**: Calculates average daily calories and macronutrient values (protein, carbs, fats) across all scheduled meals.
+* **Confidence Rating**: Compiles a confidence score (from 0.2 to 1.0) by applying deductions:
+  * **Safety Overrides**: Deducts `-0.2` for each safety-blocked recipe removed from the calendar.
+  * **Budget Overflows**: Deducts `-0.15` if the total plan cost exceeds the daily budget limit.

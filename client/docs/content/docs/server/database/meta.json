@@ -1,6 +1,15 @@
 {
   "title": "Database",
   "pages": [
-    "index"
+    "index",
+    "iam",
+    "profiles-biometrics",
+    "recipes-nutrition",
+    "planning-shopping",
+    "chat-feedback",
+    "ai-memory",
+    "jobs-notifications",
+    "audits-indexing",
+    "seeding"
   ]
 }

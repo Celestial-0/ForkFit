@@ -1,0 +1,47 @@
+---
+title: Repositories & Services
+description: Backend database adapters, pgvector searches, long-term memory extraction, and pure nutrition mathematical formulas.
+---
+
+# Repositories & Services
+
+This module handles database queries, pgvector cosine searches, long-term user profile learning loops (Reflection), and pure mathematical equations.
+
+---
+
+## 1. Database Repositories
+
+Adapters under `src/db/repositories/` query the PostgreSQL database:
+
+* **[user_repo.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/db/repositories/user_repo.py)**: Retrieves profiles, biometrics, safety constraints (allergies), workout histories, goal targets, and preferences.
+* **[plan_repo.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/db/repositories/plan_repo.py)**: Saves active meal plans, planned calendar items, and shopping lists.
+* **[recipe_repo.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/db/repositories/recipe_repo.py)**: Queries recipe ingredients and aggregates ingredient costs.
+* **[memory_repo.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/db/repositories/memory_repo.py)**: Handles active user memories (preferences, restrictions) and records new ones.
+* **[vector_repo.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/db/repositories/vector_repo.py)**: Performs pgvector Cosine Distance searches (`<=>` operator) over recipes, ingredients, and agent memory vectors.
+
+---
+
+## 2. Reflection Learning Loop
+
+Implementation: [engine.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/reflection/engine.py)
+
+Extracts long-term user preferences from ratings and comments:
+* **Memory Extraction**: If feedback contains text, it queries the LLM to extract structured insights (type: `'preference'`, `'restriction'`, or `'habit'`; content: first-person statement; confidence: float). If feedback has no text, it infers general satisfaction based on the rating.
+* **Persistence**: Writes the extracted memory to the database, computes its vector embedding using the embedding service, and saves it to the `agent_memory_embeddings` table.
+
+---
+
+## 3. Specialist Services
+
+* **[llm.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/services/llm.py)**: Provides configured LangChain chat models (e.g., Azure OpenAI, OpenAI, Gemini) based on application settings.
+* **[embedding.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/services/embedding.py)**: Computes text embeddings using standard models.
+* **[nutrition_math.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/services/nutrition_math.py)**:
+  * **`calculate_bmr`**: Basal Metabolic Rate using the Mifflin-St Jeor equation:
+    * **Male**: `BMR = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5`
+    * **Female**: `BMR = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161`
+  * **`calculate_tdee`**: Scales BMR by activity level multipliers (sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very active: 1.9).
+  * **`calculate_macro_split`**: Applies daily caloric adjustments based on fitness goals (weight/fat loss: -500 kcal; muscle gain: +300 kcal) and distributes calories into macronutrients (g):
+    * **Muscle Gain**: 30% Protein, 45% Carbs, 25% Fat.
+    * **Fat Loss**: 35% Protein, 35% Carbs, 30% Fat.
+    * **Maintenance**: 25% Protein, 50% Carbs, 25% Fat.
+  * **`score_plan_adherence`**: Computes an adherence score based on macro distribution match.

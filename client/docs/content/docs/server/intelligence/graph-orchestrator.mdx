@@ -1,0 +1,77 @@
+---
+title: Graph & Orchestrator
+description: Cognitive LangGraph state graph structure, node flow topology, and transactional graph execution state.
+---
+
+# Graph & Orchestrator
+
+The core execution engine of the ForkFit Intelligence Service utilizes **LangGraph** to compile a deterministic cyclic state graph of specialized nutritional agents.
+
+Implementation: [orchestrator.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/graph/orchestrator.py) and [state.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/state.py)
+
+---
+
+## 1. Graph Topology
+
+The orchestrator builds a sequential execution chain. Rather than writing complex conditional fan-out logic, every node is traversed in order. An agent checks `state["required_agents"]` at the beginning of its execution and performs a fast no-op return if it is not required.
+
+### Node Flow Diagram
+<Mermaid
+  chart="
+graph TD
+    Entry([Entry]) --> Planner[Planner]
+    Planner --> Route{route_from_planner}
+    Route --> Safety[Safety]
+    Safety --> Nutrition[Nutrition]
+    Nutrition --> Budget[Budget]
+    Budget --> Culture[Culture]
+    Culture --> Recipe[Recipe]
+    Recipe --> Calendar[Calendar]
+    Calendar --> Shopping[Shopping]
+    Shopping --> Consensus[Consensus]
+    Consensus --> Judge[Judge]
+    
+    Judge --> Verdict{verdict_router}
+    Verdict -- Failed & attempts < max --> Planner
+    Verdict -- Passed or max attempts --> Visualization[Visualization]
+    Visualization --> END([END])"
+/>
+
+* **Compilation**: Wires all specialist nodes, registers the conditional entry router, configures the Judge loops, and compiles the graph for async execution streaming.
+* **Routing**: The `judge_router` checks if the validation passes. If validation fails and the `replan_count` is less than `max_replan_attempts` (default 2), it routes back to the `planner` node. Otherwise, it proceeds to the `visualization` node.
+
+---
+
+## 2. Graph State definition
+
+The single source of truth for variables flowing through the agents is `GraphState`.
+
+### `GraphState` TypedDict Fields
+* **Input Fields**:
+  * `user_id` (str): Authenticated user ID.
+  * `prompt` (str): Raw natural language instruction.
+  * `context` (dict): Hydrated context containing active goals, biometrics, preferences, candidate recipes, and active memories.
+  * `chat_history` (list[dict]): Conversational message history.
+* **Planner Outputs**:
+  * `required_agents` (list[str]): Agents identified as required for this run.
+  * `execution_plan` (str): Description of the reasoning/steps.
+* **Specialist Outputs**:
+  * `safety_result` (SafetyResult): Safe vs. allergen-blocked recipe lists and warnings.
+  * `nutrition_result` (NutritionResult): Computed macro splits and candidate recipe adherence scores.
+  * `budget_result` (BudgetResult): Plan budget checks and LLM-suggested food substitutions.
+  * `culture_result` (CultureResult): Aligned recipe list and cultural rejection reasons.
+  * `recipe_result` (RecipeResult): Selected recipe blueprints and alternatives.
+  * `calendar_result` (CalendarResult): Daily schedule plans with scheduled meals.
+  * `shopping_result` (ShoppingResult): Grocery items list and estimated costs.
+* **Consensus & Quality Assurance**:
+  * `merged_plan` (MergedPlan): Combined meal schedules, nutrition summary, and consolidated grocery list.
+  * `judge_verdict` (JudgeVerdict): Boolean pass status, validation failures, and dynamic replan prompt instructions.
+  * `replan_count` (int): Number of replanning loops executed.
+* **UI Output**:
+  * `ui_elements` (list[UIElementSpecDict]): JSON specifications for frontend React charts/timelines.
+  * `final_text` (str): Final markdown chat reply.
+* **Injected Dependencies**:
+  * `_pool` (asyncpg.Pool): Database connection pool.
+  * `_settings` (Settings): Global configuration flags.
+  * `_step_callback` (Callable): Streams agent step latency/details over gRPC.
+  * `_token_callback` (Callable): Streams real-time chat text delta tokens.
