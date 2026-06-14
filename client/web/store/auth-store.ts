@@ -37,8 +37,15 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const data = await signInApi(payload);
+          let fullUser = data.user;
+          try {
+            const profile = await fetchMeApi(data.access_token);
+            fullUser = { ...data.user, ...profile };
+          } catch (profileErr) {
+            console.error("Failed to fetch profile during sign in:", profileErr);
+          }
           set({
-            user: data.user,
+            user: fullUser,
             accessToken: data.access_token,
             isAuthenticated: true,
             isLoading: false,
@@ -54,8 +61,15 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const data = await signUpApi(payload);
+          let fullUser = data.user;
+          try {
+            const profile = await fetchMeApi(data.access_token);
+            fullUser = { ...data.user, ...profile };
+          } catch (profileErr) {
+            console.error("Failed to fetch profile during sign up:", profileErr);
+          }
           set({
-            user: data.user,
+            user: fullUser,
             accessToken: data.access_token,
             isAuthenticated: true,
             isLoading: false,

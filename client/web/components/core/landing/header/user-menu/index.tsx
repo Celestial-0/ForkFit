@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState } from "react"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useAuthStore } from "@/store/auth-store"
@@ -91,14 +90,14 @@ export function UserMenu() {
   const triggerClasses =
     "relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted/30 outline-none transition-transform active:scale-95 cursor-pointer hover:bg-muted/50 overflow-hidden"
 
-  const triggerContent = user.avatar_url ? (
-    <Image
-      src={user.avatar_url}
+  const avatarUrl = user.avatar_url || `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(user.full_name || user.email || "user")}`
+
+  const triggerContent = (
+    <img
+      src={avatarUrl}
       alt={user.full_name || user.email}
       className="size-full object-cover"
     />
-  ) : (
-    <HugeiconsIcon icon={UserIcon} className="size-4.5 text-muted-foreground" />
   )
 
   if (isMobile) {
@@ -121,7 +120,7 @@ export function UserMenu() {
             <Button
               variant="ghost"
               className="w-full justify-start h-10 px-3 text-sm font-medium"
-              onClick={() => handleNavigate("/dashboard")}
+              onClick={() => handleNavigate("/dashboard?tab=logs")}
             >
               <HugeiconsIcon
                 icon={DashboardCircleIcon}
@@ -132,7 +131,7 @@ export function UserMenu() {
             <Button
               variant="ghost"
               className="w-full justify-start h-10 px-3 text-sm font-medium"
-              onClick={() => handleNavigate("/profile")}
+              onClick={() => handleNavigate("/dashboard?tab=profile")}
             >
               <HugeiconsIcon
                 icon={Settings01Icon}
@@ -226,7 +225,7 @@ export function UserMenu() {
         <div className="p-1">
           <DropdownMenuItem
             className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm cursor-pointer"
-            onClick={() => handleNavigate("/dashboard")}
+            onClick={() => handleNavigate("/dashboard?tab=logs")}
           >
             <HugeiconsIcon
               icon={DashboardCircleIcon}
@@ -237,7 +236,7 @@ export function UserMenu() {
 
           <DropdownMenuItem
             className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm cursor-pointer"
-            onClick={() => handleNavigate("/profile")}
+            onClick={() => handleNavigate("/dashboard?tab=profile")}
           >
             <HugeiconsIcon
               icon={Settings01Icon}
