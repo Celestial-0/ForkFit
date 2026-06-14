@@ -1,0 +1,66 @@
+name: Deploy Docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            client/docs/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('client/bun.lock') }}-${{ hashFiles('client/docs/**/*.js', 'client/docs/**/*.ts', 'client/docs/**/*.tsx', 'client/docs/**/*.mdx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('client/bun.lock') }}-
+
+      - name: Install dependencies
+        run: bun install
+        working-directory: ./client
+
+      - name: Remove dynamic API route (AI Chat)
+        run: rm -rf docs/src/app/api/chat
+        working-directory: ./client
+
+      - name: Build docs
+        run: bun run build --filter=docs
+        working-directory: ./client
+        env:
+          GITHUB_ACTIONS: true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: client/docs/out
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
