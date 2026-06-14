@@ -1,6 +1,11 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
 
+// Derive base WebSocket/SSE URL from API_BASE_URL if NEXT_PUBLIC_WS_URL is not explicitly configured
+export const WS_BASE_URL =
+  process.env.NEXT_PUBLIC_WS_URL ||
+  API_BASE_URL.replace(/^http/, "ws").replace("/api/v1", "");
+
 // Unified User type containing account credentials and profile attributes
 export interface User {
   id: string;

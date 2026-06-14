@@ -255,7 +255,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // 3. Open SSE readable stream manually to support Bearer token authentication headers
     try {
       const response = await fetch(
-        `${API_BASE_URL.replace("/api/v1", "")}/api/v1/intelligence/stream/${traceId}`,
+        `${API_BASE_URL}/intelligence/stream/${traceId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

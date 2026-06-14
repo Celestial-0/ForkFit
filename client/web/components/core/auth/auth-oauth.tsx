@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button"
 import { GoogleIcon } from "@/components/icons/google-icon"
 import { GithubIcon } from "@/components/icons/github-icon"
 import { toast } from "sonner"
+import { API_BASE_URL } from "@/lib/api/api"
 
 export function AuthOAuth() {
   const handleProviderSignIn = (provider: "google" | "github") => {
     toast.info(`Redirecting to ${provider} OAuth...`)
-    window.location.href = `http://localhost:4000/api/v1/auth/oauth/${provider}/authorize`
+    window.location.href = `${API_BASE_URL}/auth/oauth/${provider}/authorize`
   }
 
   return (
