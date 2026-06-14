@@ -26,3 +26,38 @@ Returns status information for active job workers, scheduled notifications, and 
 `GET /api/v1/admin/audit-logs`
 
 Retrieves system action logs (session revokes, role alterations, permission creations) with user correlation details.
+
+---
+
+## 3. Raw Food Costs
+
+### List Raw Food Costs
+
+`GET /api/v1/admin/raw-food-costs`
+
+Returns a paginated list of food pricing rules matching a search query (`?q=pattern`).
+
+### Create Raw Food Cost
+
+`POST /api/v1/admin/raw-food-costs`
+
+Creates a new pricing rule for a pattern and auto-links matching unpriced food items.
+
+### Update Raw Food Cost
+
+`PUT /api/v1/admin/raw-food-costs/{id}`
+
+Updates an existing pricing rule pattern and price.
+
+### Delete Raw Food Cost
+
+`DELETE /api/v1/admin/raw-food-costs/{id}`
+
+Removes a pricing rule.
+
+### Link Food Item to Cost
+
+`POST /api/v1/admin/raw-food-costs/link`
+
+Manually binds a specific food item to a raw food cost ID.
+

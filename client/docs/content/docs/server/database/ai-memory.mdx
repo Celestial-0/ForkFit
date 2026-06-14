@@ -66,9 +66,9 @@ These tables support Cosine Similarity search over raw catalogs and user memorie
 Stores vector coordinates for recipe searches.
 * **Schema**: `recipe_id` (foreign key recipes), `embedding` (`vector(1536)`), `chunk_text`, `updated_at`.
 
-### `ingredient_embeddings`
-Stores vector coordinates for ingredient searches.
-* **Schema**: `ingredient_id` (foreign key ingredients), `embedding` (`vector(1536)`), `chunk_text`, `updated_at`.
+### `food_item_embeddings`
+Stores vector coordinates for food item searches.
+* **Schema**: `food_item_id` (foreign key food_items), `embedding` (`vector(1536)`), `chunk_text`, `updated_at`.
 
 ### `agent_memory_embeddings`
 Stores vector coordinates for semantic user memory searches.

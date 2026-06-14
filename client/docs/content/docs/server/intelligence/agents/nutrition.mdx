@@ -28,7 +28,7 @@ The agent defines the user's daily macronutrient targets:
 ## 2. Recipe Adherence Scoring
 
 The agent evaluates how well each candidate recipe matches the calculated macro splits:
-1. Loads full ingredient specifications for each recipe from the database.
+1. Loads full food item specifications for each recipe from the database.
 2. Sums the total macros (calories, protein, carbs, fats) for the recipe using `calculate_recipe_nutrition`.
 3. Scores recipe adherence against the daily macro targets using `score_plan_adherence`.
 4. Sorts the list of scored recipes in descending order of their adherence score.

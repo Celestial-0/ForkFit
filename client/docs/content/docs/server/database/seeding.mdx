@@ -1,76 +1,59 @@
 ---
-title: Database Seeding (Anuvaad INDB)
-description: Overview of the database seeding mechanism using the Anuvaad INDB Indian food dataset.
+title: Database Seeding (Indian Food & Prices)
+description: Overview of the database seeding mechanism using the Indian Food Dataset CSV and initial costs.
 ---
 
-# Database Seeding (Anuvaad INDB)
+# Database Seeding (Indian Food & Prices)
 
-This section explains the ingestion process for seeding the ForkFit database with standard Indian nutrition data.
+This section explains the ingestion process for seeding the ForkFit database with standard Indian recipe and nutrition datasets, pricing structures, and RAG search embeddings.
 
-Ingestion script: [seed_anuvaad.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/scripts/seed_anuvaad.sql)  
-Source dataset: [Anuvaad_INDB_2024.11.csv](file:///c:/Users/300079/CapCode/ForkFit/server/db/seeds/Anuvaad_INDB_2024.11.csv)
+Ingestion script: [seed_database.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/scripts/seed_database.py)  
+Source datasets:  
+* [IndianFoodDatasetCSV.csv](file:///c:/Users/300079/CapCode/ForkFit/server/db/seeds/IndianFoodDatasetCSV.csv) (16,500+ Indian recipe records)
+* [initial_food_costs.json](file:///c:/Users/300079/CapCode/ForkFit/server/db/seeds/initial_food_costs.json) (Base food item price listings)
 
 ---
 
 ## 1. Raw Seeding Datasets
 
 The raw data is stored in the following source files:
-* **`Anuvaad_INDB_2024.11.csv`**: CSV table containing detailed food components.
-* **`Anuvaad_INDB_2024.11.xlsx`**: Excel version of the same dataset.
-
-This dataset compiles energy (kcal), carbohydrates (g), protein (g), fat (g), fiber (g), sodium (mg), and a wide range of micronutrients (vitamins, minerals) for hundreds of Indian ingredients.
+* **`initial_food_costs.json`**: Key-value listing mapping food name patterns (e.g. `'paneer'`) to baseline costs per 100 grams.
+* **`IndianFoodDatasetCSV.csv`**: Contains details of ingredients, cuisines, preparation times, instructions, courses, and source URLs for thousands of Indian recipes.
 
 ---
 
 ## 2. Ingestion Flow
 
-The SQL ingestion script performs the following operations inside a single transactional block:
+The Python ingestion script performs the following operations inside a single transactional block:
 
 <Mermaid
-  chart="
+  chart={`
 graph TD
-    A[Start seed_anuvaad.sql] --> B[Create temp_csv_nutrition temporary table]
-    B --> C[COPY data from Anuvaad_INDB_2024.11.csv into temp_csv_nutrition]
-    C --> D[Insert/Update ingredients table]
-    D --> E[Insert/Update ingredient_portions table]
-    E --> F[Commit Transaction]"
+    A[Start seed_database.py] --> B[Seed raw_food_costs from initial_food_costs.json]
+    B --> C[Parse IndianFoodDatasetCSV.csv]
+    C --> D[Seed food_items and auto-link to matching raw_food_costs]
+    D --> E[Insert recipes and map food item quantities]
+    E --> F[Generate/cache 1536-dim recipe embeddings via Ollama]
+    F --> G[Commit Transaction]
+`}
 />
 
-### Ingestion Script Highlights
+### Environment Configuration
 
-1. **Staging**: Creates a temporary staging table named `temp_csv_nutrition` that mirrors the CSV columns exactly.
-2. **Ingestion**: Uses PostgreSQL `\copy` or `COPY` command to parse the raw CSV:
-   ```sql
-   \copy temp_csv_nutrition FROM :csv_file WITH CSV HEADER DELIMITER ',' ESCAPE '"' QUOTE '"' ENCODING 'UTF8';
-   ```
-3. **Inserting Ingredients**: Maps the staging data to the [ingredients](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql#L4) table:
-   * Maps macronutrients directly (e.g. `carb_g`, `protein_g`, `fat_g`, `fibre_g`, `sodium_mg`).
-   * Bundles all other columns (vitamins, minerals, cholesterol, sugars, etc.) into the `micronutrients` JSONB column.
-   * Updates existing entries on conflict using `ON CONFLICT (food_code) DO UPDATE`.
-4. **Inserting Portions**: Maps portion equivalents (e.g. serving units like 'slice' or 'cup' to grams) to the [ingredient_portions](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql#L25) table.
+The script reads connection parameters from a `.env` file loaded from the path directories:
+* `DATABASE_URL`: PostgreSQL connection string.
+* `CSV_PATH`: Path to the raw recipes CSV.
+* `OLLAMA_HOST` / `OLLAMA_BASE_URL`: Base address of your local Ollama server (for generating text embeddings).
+* `EMBEDDING_MODEL`: Name of the text embedding model (e.g., `'nomic-embed-text'`).
 
 ---
 
 ## 3. How to Run the Seeding Script
 
-Run the seeding script via the terminal using the `psql` command.
+Make sure you have your virtual environment activated and dependencies installed, then run the python script:
 
-### Local Command (relative path)
-Ensure your working directory is the folder containing the script:
 ```bash
-cd server/db/scripts
-psql "postgres://yash:yash1234@localhost:5432/forkfit" -f seed_anuvaad.sql
+# Ensure environment variables are loaded or declare them inline
+python server/intelligence/scripts/seed_database.py
 ```
 
-### Dynamic CSV Path Command
-You can run the script from any folder by specifying the path to the CSV file dynamically:
-```bash
-psql "postgres://yash:yash1234@localhost:5432/forkfit" -v csv_file='server/db/seeds/Anuvaad_INDB_2024.11.csv' -f server/db/scripts/seed_anuvaad.sql
-```
-
-### Docker Execution Command
-If running PostgreSQL inside a Docker container:
-```bash
-docker cp server/db postgres:/tmp/db
-docker exec -i postgres psql -U yash -d forkfit -f /tmp/db/scripts/seed_anuvaad.sql
-```

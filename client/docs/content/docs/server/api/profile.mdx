@@ -1,11 +1,11 @@
 ---
 title: Profiles & Biometrics 
-description: Detailed reference for user profiles, safety checklists, biometrics tracking, and active goals.
+description: Detailed reference for user profiles, safety checklists, preferences, biometrics tracking, workouts, and active goals.
 ---
 
 # Profiles & Biometrics 
 
-Endpoints for retrieving and writing personalized preferences, body measurements, and active health objectives.
+Endpoints for retrieving and writing personalized preferences, body measurements, medical safety constraints, activity logs, and active fitness objectives. All profile routes are nested under `/api/v1/profile`.
 
 ---
 
@@ -15,7 +15,7 @@ Endpoints for retrieving and writing personalized preferences, body measurements
 
 `GET /api/v1/profile`
 
-Returns target macros, height, weight, activity levels, and preferences.
+Returns target macros, height, weight, activity levels, and basic details. Output is merged with account credentials (`email`, `email_verified`, `status`).
 
 ---
 
@@ -23,7 +23,26 @@ Returns target macros, height, weight, activity levels, and preferences.
 
 `PUT /api/v1/profile`
 
-Updates physical metadata and calorie targets.
+Updates physical metadata and display parameters.
+
+* **Payload Parameters**:
+  <TypeTable
+    type={{
+      full_name: { type: 'string', description: 'Display name.' },
+      avatar_url: { type: 'string', description: 'User avatar link.' },
+      gender: { type: 'string', description: 'Male, Female, or Other.' },
+      dob: { type: 'string', description: 'Date of birth (YYYY-MM-DD).' },
+      timezone: { type: 'string', description: 'User local timezone.' }
+    }}
+  />
+
+---
+
+### Get Medical Safety Details
+
+`GET /api/v1/profile/safety`
+
+Retrieves current allergies and medical condition profiles.
 
 ---
 
@@ -43,7 +62,31 @@ Updates safety parameters like food allergies and medical restrictions.
 
 ---
 
+### Get Food Preferences
+
+`GET /api/v1/profile/preferences`
+
+Retrieves user preferred and avoided food catalogs, calorie boundaries, and cuisine constraints.
+
+---
+
+### Update Food Preferences
+
+`PUT /api/v1/profile/preferences`
+
+Updates preferred and avoided foods or cuisines.
+
+---
+
 ## 2. Logs & Goals
+
+### Get Biometric History
+
+`GET /api/v1/profile/biometrics`
+
+Retrieves historical tracking logs of body weight, height, or body fat.
+
+---
 
 ### Log Biometric Entry
 
@@ -61,8 +104,41 @@ Submits a new metric reading.
 
 ---
 
+### Get Recent Workouts
+
+`GET /api/v1/profile/workouts`
+
+Retrieves history of logged physical workouts.
+
+---
+
 ### Log Workout Session
 
 `POST /api/v1/profile/workouts`
 
 Records physical activities, duration, and calories burned.
+
+---
+
+### Get Active Goals
+
+`GET /api/v1/profile/goals`
+
+Retrieves current caloric targets, weight objectives, and macro distribution targets.
+
+---
+
+### Set New Goal
+
+`POST /api/v1/profile/goals`
+
+Registers a new target objective (e.g. Muscle Gain, Fat Loss).
+
+---
+
+### Deactivate Goal Category
+
+`DELETE /api/v1/profile/goals/{category}`
+
+Deactivates active goals under a specific category (e.g. `'weight'`, `'calories'`).
+

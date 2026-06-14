@@ -1,32 +1,38 @@
 ---
 title: Budget Agent
-description: Budget Agent aggregating ingredient costs and suggesting cheap alternatives.
+description: Budget Agent aggregating food costs, dynamically resolving missing prices online, and suggesting cheap alternatives.
 ---
 
 # Budget Agent
 
-The **Budget Agent** evaluates the total cost of candidate recipes and optimizes the ingredient selection to align with the user's daily budget limit.
+The **Budget Agent** evaluates the total cost of candidate recipes and optimizes the food item selection to align with the user's daily budget limit.
 
 Implementation: [budget.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/budget.py)
 
 ---
 
-## 1. Cost Aggregation
+## 1. Cost Aggregation & Resolution
 
 For each candidate recipe, the agent:
-1. Resolves all ingredient components.
-2. Calls the database repository method `calculate_recipe_cost` to aggregate ingredient costs based on unit weight price.
-3. Computes the average cost of all candidate recipes.
+1. Resolves all food item components.
+2. Identifies any food items with missing costs (`cost == 0.0`).
+3. **Dynamic Price Resolution**: If missing costs are found, the agent triggers a self-contained LLM tool loop (up to 5 iterations) to resolve the market pricing:
+   - **`get_raw_food_costs`**: Checks existing database pricing rules.
+   - **`search_food_item_market_price`**: Performs web search scrapes on DuckDuckGo to obtain commodity prices per kg in India.
+   - **`save_raw_food_cost`**: Enters the pattern and calculated price per 100g into the database, automatically updating the link on matching unpriced `food_items`.
+4. Calls the database repository method `calculate_recipe_cost` to aggregate food item costs based on their raw food cost bindings.
+5. Computes the average cost of all candidate recipes.
 
 ---
 
 ## 2. Substitution Optimization
 
 If a budget limit is defined and the average candidate cost exceeds the limit:
-* The agent calls the LLM with a system context helper to generate ingredient substitution suggestions.
+* The agent calls the LLM with a system context helper to generate food item substitution suggestions.
 * The prompt instructs the model to suggest three simple, healthy, and cheap substitutions (e.g. replacing quinoa with brown rice, or chicken breast with tofu/lentils) to reduce costs.
 * The suggestions are parsed into a bulleted list.
 
 * **Fallback**: If the LLM call fails, the agent registers default warning substitutions:
   * *"Substitute imported grains with oats or rice"*
   * *"Use local seasonal vegetables"*
+

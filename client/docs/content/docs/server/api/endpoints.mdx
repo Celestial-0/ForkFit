@@ -1,11 +1,11 @@
 ---
 title: API Endpoints Reference
-description: Detailed HTTP route specifications, parameters, and query endpoints.
+description: Complete REST API routing reference for the ForkFit application server.
 ---
 
 # API Endpoints Reference
 
-Below is the complete API reference for all endpoints supported by the ForkFit server, grouped by functional module.
+All backend transactional routes are mounted under the `/api/v1` namespace. This reference details all available endpoints, required payloads, and parameter definitions.
 
 ---
 
@@ -15,36 +15,16 @@ Endpoints for user accounts, session tokens, OTPs, and access controls.
 
 <Accordions>
   <Accordion title="POST /api/v1/auth/signup - Create User Account">
-    Creates a new user profile with verification settings.
+    Registers a new user on the platform.
 
     #### Request Payload
     <TypeTable
       type={{
-        email: { type: 'string', required: true, description: 'User login email address.' },
-        password: { type: 'string', required: true, description: 'Min 8 characters secure password.' },
-        full_name: { type: 'string', required: true, description: 'User display name.' }
+        email: { type: 'string', required: true, description: 'User account email.' },
+        password: { type: 'string', required: true, description: 'Account password (min 8 chars).' },
+        full_name: { type: 'string', required: false, description: 'Optional display name.' }
       }}
     />
-
-    #### Example Request
-    <Tabs items={['cURL', 'JavaScript']}>
-      <Tab value="cURL">
-        ```bash
-        curl -X POST http://localhost:3001/api/v1/auth/signup \
-          -H "Content-Type: application/json" \
-          -d '{"email":"user@example.com","password":"mypassword","full_name":"John Doe"}'
-        ```
-      </Tab>
-      <Tab value="JavaScript">
-        ```js
-        fetch('/api/v1/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'user@example.com', password: 'mypassword', full_name: 'John Doe' })
-        });
-        ```
-      </Tab>
-    </Tabs>
   </Accordion>
 
   <Accordion title="POST /api/v1/auth/signin - User Login">
@@ -59,12 +39,44 @@ Endpoints for user accounts, session tokens, OTPs, and access controls.
     />
   </Accordion>
 
-  <Accordion title="GET /api/v1/auth/me - Current Profile Context">
-    Returns details of the currently authenticated user. Requires a `Authorization: Bearer <token>` header.
+  <Accordion title="POST /api/v1/auth/signout - Log Out Current Session">
+    Revokes the active Bearer token. Requires authorization header.
   </Accordion>
 
-  <Accordion title="POST /api/v1/auth/roles - Create/List Roles">
-    Manage access roles. Admin authorization is required.
+  <Accordion title="POST /api/v1/auth/signout-all - Log Out All Devices">
+    Revokes all active session tokens associated with the user account.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/send-verification-otp - Send Email Verification Code">
+    Dispatches a verification OTP to the user's registered email address.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/verify-email - Verify Email Address">
+    Validates the email verification OTP to activate account status.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/forgot-password - Trigger Password Reset OTP">
+    Initiates password recovery by mailing a reset token.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/reset-password - Reset Password via OTP">
+    Saves a new password using the mailed reset OTP code.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/change-password - Change Account Password">
+    Updates password from within an authenticated user session.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/roles - Create or List RBAC Roles">
+    Manage access roles. Admin authorization required.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/permissions - Create or List Permissions">
+    Manage access permissions. Admin authorization required.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/auth/roles/grant - Grant Permission to Role">
+    Maps a permission to a role. Admin authorization required.
   </Accordion>
 </Accordions>
 
@@ -76,7 +88,7 @@ Manage biometrics, preferred food types, goals, and medical parameters.
 
 <Accordions>
   <Accordion title="GET /api/v1/profile - Get User Profile">
-    Retrieves user height, weight, BMI, daily nutritional goals, and preferred cuisines.
+    Retrieves user height, weight, BMI, daily nutritional goals, and preferred cuisines. Output is merged with account credentials (`email`, `email_verified`, `status`).
   </Accordion>
 
   <Accordion title="PUT /api/v1/profile - Update User Profile">
@@ -86,14 +98,56 @@ Manage biometrics, preferred food types, goals, and medical parameters.
     <TypeTable
       type={{
         full_name: { type: 'string', description: 'Display name.' },
-        height_cm: { type: 'number', description: 'Height metric.' },
-        target_calories: { type: 'number', description: 'Daily calorie target.' }
+        avatar_url: { type: 'string', description: 'User avatar link.' },
+        gender: { type: 'string', description: 'Male, Female, or Other.' },
+        dob: { type: 'string', description: 'Date of birth (YYYY-MM-DD).' },
+        timezone: { type: 'string', description: 'User local timezone.' }
       }}
     />
   </Accordion>
 
+  <Accordion title="GET /api/v1/profile/safety - Get Medical Safety Profile">
+    Retrieves current allergies and medical condition profiles.
+  </Accordion>
+
+  <Accordion title="PUT /api/v1/profile/safety - Update Medical Safety Profile">
+    Replaces lists of medical conditions and allergies.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/profile/preferences - Get Food Preferences">
+    Retrieves food habits, preferred cuisines, and daily calorie ranges.
+  </Accordion>
+
+  <Accordion title="PUT /api/v1/profile/preferences - Update Food Preferences">
+    Updates user preferred and avoided food catalogs.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/profile/biometrics - Get Biometric Logs">
+    Retrieves historical log list of weight, height, or body fat.
+  </Accordion>
+
   <Accordion title="POST /api/v1/profile/biometrics - Log Biometrics">
-    Logs an entry of weight, height, or fat percentage for historical tracking.
+    Logs a new biometric snapshot value.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/profile/workouts - Get Recent Workouts">
+    Retrieves recent logged workout history.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/profile/workouts - Log Workout">
+    Logs details of a completed workout session.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/profile/goals - Get Active Goals">
+    Retrieves current caloric targets, weight limits, and macro distribution plans.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/profile/goals - Set New Goal">
+    Registers a new target (e.g. Muscle Gain, Fat Loss).
+  </Accordion>
+
+  <Accordion title="DELETE /api/v1/profile/goals/{category} - Deactivate Goal Category">
+    Deactivates current goals under a category (e.g. weight, calories).
   </Accordion>
 </Accordions>
 
@@ -101,11 +155,15 @@ Manage biometrics, preferred food types, goals, and medical parameters.
 
 ## 3. Recipes & Nutrition
 
-Log meals, query nutritional databases, and catalog ingredients.
+Log meals, query nutritional databases, and catalog food items.
 
 <Accordions>
-  <Accordion title="GET /api/v1/ingredients/search - Search Ingredients">
-    Queries the database for nutritional values of ingredients.
+  <Accordion title="POST /api/v1/food-items - Create Food Item">
+    Registers a new food item in the shared database.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/food-items/search - Search Food Items">
+    Queries the database for nutritional values of food items.
 
     #### Query Parameters
     <TypeTable
@@ -115,24 +173,96 @@ Log meals, query nutritional databases, and catalog ingredients.
     />
   </Accordion>
 
-  <Accordion title="POST /api/v1/food-logs - Log Daily Food Item">
-    Record ingredients or custom recipes consumed by the user.
+  <Accordion title="GET /api/v1/food-items/{id} - Get Food Item Details">
+    Retrieves complete macro distribution (protein, fats, carbs, calories) for a specific food item ID.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/recipes - List Recipes">
+    Returns a paginated list of available recipes. Filters by owner available.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/recipes - Create Custom Recipe">
+    Saves a custom recipe consisting of multiple food item weights.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/recipes/{id} - Get Recipe Details">
+    Retrieves full instructions, cuisine tags, and consolidated macros.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/food-logs - List Consumption Logs">
+    Retrieves history of consumed dishes.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/food-logs - Log Consumption">
+    Logs a food item or recipe consumed in a specific portion size.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/food-logs/daily - Get Daily Macro Summary">
+    Summarizes protein, carbs, fats, and calories consumed today vs user goals.
   </Accordion>
 </Accordions>
 
 ---
 
-## 4. Plans & Pantry
+## 4. Planning & Pantry
 
-Calendared meal programs, items in the home pantry, and automated lists.
+Calendared meal programs, pantry inventory, and grocery shopping lists.
 
 <Accordions>
+  <Accordion title="GET /api/v1/meal-plans - List Meal Plans">
+    Retrieves historical meal plans generated for the user.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/meal-plans - Create Meal Plan">
+    Saves a structured weekly or daily meal plan.
+  </Accordion>
+
   <Accordion title="GET /api/v1/meal-plans/active - Active Meal Plan">
     Returns the user's active diet schedule and calorie targets.
   </Accordion>
 
+  <Accordion title="GET /api/v1/meal-plans/{id} - Get Meal Plan Details">
+    Retrieves scheduled slots and recipe targets for a specific plan ID.
+  </Accordion>
+
+  <Accordion title="PATCH /api/v1/meal-plans/{id}/status - Toggle Plan Active State">
+    Toggles the active status of a meal plan.
+  </Accordion>
+
+  <Accordion title="PATCH /api/v1/meal-plans/{id}/items/{item_id}/consumed - Toggle Item Consumption">
+    Marks a scheduled meal item as consumed (triggers a food log entry).
+  </Accordion>
+
+  <Accordion title="GET /api/v1/pantry - List Pantry Inventory">
+    Retrieves stock levels and expiration dates of items in the user's digital pantry.
+  </Accordion>
+
   <Accordion title="POST /api/v1/pantry - Add Pantry Item">
-    Add an ingredient to the user's digital pantry inventory.
+    Add a food item to the user's digital pantry inventory.
+  </Accordion>
+
+  <Accordion title="PATCH /api/v1/pantry/{id} - Update Pantry Stock">
+    Updates available quantity or expires date of a pantry item.
+  </Accordion>
+
+  <Accordion title="DELETE /api/v1/pantry/{id} - Remove Pantry Item">
+    Deletes an item from the digital pantry inventory.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/shopping-lists - List Shopping Lists">
+    Retrieves all grocery lists generated.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/shopping-lists - Create Shopping List">
+    Saves a custom or plan-generated shopping list.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/shopping-lists/{id} - Get Shopping List Details">
+    Retrieves grocery item details and estimated costs.
+  </Accordion>
+
+  <Accordion title="PATCH /api/v1/shopping-lists/{id}/items/{item_id} - Toggle Item Acquired Status">
+    Marks an item on the shopping list as acquired.
   </Accordion>
 </Accordions>
 
@@ -140,9 +270,57 @@ Calendared meal programs, items in the home pantry, and automated lists.
 
 ## 5. Chat & AI Intelligence
 
-Interact with our cognitive graph loops and search semantic memories.
+Interact with our cognitive graph loops, semantic memory databases, and SSE tracing.
 
 <Accordions>
+  <Accordion title="GET /api/v1/threads - List Chat Threads">
+    Retrieves threads list.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/threads - Create Thread">
+    Starts a new chat thread.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/threads/{id} - Get Thread Details">
+    Retrieves thread parameters.
+  </Accordion>
+
+  <Accordion title="DELETE /api/v1/threads/{id} - Delete Thread">
+    Deletes a thread and its message records.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/threads/{id}/messages - List Messages">
+    Retrieves chat history inside a thread.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/threads/{id}/messages - Send Message">
+    Dispatches a query, initiating background AI worker tasks.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/feedback - Post AI Response Feedback">
+    Sends thumbs up/down user feedback for an AI message. Triggers asynchronous reflection.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/intelligence/traces - List Execution Traces">
+    Retrieves top-level LangGraph agent workflows.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/intelligence/traces/{id} - Get Trace Details">
+    Retrieves nested step latency, payloads, and tokens of an execution.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/intelligence/memories - List Active Memories">
+    Retrieves semantically extracted preferences and habits.
+  </Accordion>
+
+  <Accordion title="DELETE /api/v1/intelligence/memories/{id} - Deactivate Memory">
+    Disables a specific user memory configuration.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/intelligence/memories/search - Semantic Search Memories">
+    Searches active user preferences using pgvector cosine distance.
+  </Accordion>
+
   <Accordion title="POST /api/v1/intelligence/orchestrate - Run Agent Graph">
     Starts a LangGraph orchestration loop for coaching, recipes, or queries.
 
@@ -155,7 +333,47 @@ Interact with our cognitive graph loops and search semantic memories.
     />
   </Accordion>
 
+  <Accordion title="POST /api/v1/intelligence/intent - Classify Query Intent">
+    Queries intent classification parsing on user input.
+  </Accordion>
+
   <Accordion title="GET /api/v1/intelligence/stream/{trace_id} - Stream Node Updates">
     SSE stream endpoint yielding real-time node outputs, tokens, and safety audits.
+  </Accordion>
+</Accordions>
+
+---
+
+## 6. Administration Reference
+
+Protected admin-only endpoints for managing background tasks and auditing operations. Requires a user session with the `admin` role.
+
+<Accordions>
+  <Accordion title="GET /api/v1/admin/jobs - List Background Jobs">
+    Returns status information for active job workers, scheduled notifications, and cache cleanups.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/admin/audit-logs - List System Audit Logs">
+    Retrieves system action logs with user correlation details.
+  </Accordion>
+
+  <Accordion title="GET /api/v1/admin/raw-food-costs - List Pricing Rules">
+    Returns a paginated list of food pricing rules matching a search query (`?q=pattern`).
+  </Accordion>
+
+  <Accordion title="POST /api/v1/admin/raw-food-costs - Create Raw Food Cost">
+    Creates a new pricing rule for a pattern and auto-links matching unpriced food items.
+  </Accordion>
+
+  <Accordion title="PUT /api/v1/admin/raw-food-costs/{id} - Update Raw Food Cost">
+    Updates an existing pricing rule pattern and price.
+  </Accordion>
+
+  <Accordion title="DELETE /api/v1/admin/raw-food-costs/{id} - Delete Raw Food Cost">
+    Removes a pricing rule.
+  </Accordion>
+
+  <Accordion title="POST /api/v1/admin/raw-food-costs/link - Link Food Item to Cost">
+    Manually binds a specific food item to a raw food cost ID.
   </Accordion>
 </Accordions>

@@ -21,7 +21,7 @@ The agent filters candidate recipes by checking constraints from previous stages
 
 ## 2. Selection & Optimization
 
-For each filtered candidate, the agent fetches its ingredients, aggregates its total cost, and calculates its macro distribution.
+For each filtered candidate, the agent fetches its food items, aggregates its total cost, and calculates its macro distribution.
 
 The agent then queries the chat model, utilizing a structured Pydantic schema (`RecipeSelectionDecision`) to select the best recipes:
 

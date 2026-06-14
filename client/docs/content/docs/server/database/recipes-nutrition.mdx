@@ -1,27 +1,27 @@
 ---
 title: Recipes & Nutrition
-description: Database tables representing ingredients, portions, recipes, and user food tracking logs.
+description: Database tables representing food items, raw food costs, portions, recipes, and user food tracking logs.
 ---
 
 # Recipes & Nutrition
 
-This module represents the primary nutrition records, recipe formulations, raw ingredient properties, and daily calorie consumption logs.
+This module represents the primary nutrition records, recipe formulations, raw food item properties, dynamic cost structures, and daily calorie consumption logs.
 
 Migrated by: [00003_create_recipes_and_nutrition.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql)
 
 ---
 
-## 1. Ingredients Catalog
+## 1. Food Catalog & Costs
 
-### `ingredients`
+### `food_items`
 Defines base food items and their macronutrient distributions per 100 grams.
 
 * **Schema**:
   | Column | Type | Constraints | Default | Description |
   | :--- | :--- | :--- | :--- | :--- |
-  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Ingredient identifier. |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Food item identifier. |
   | `name` | `text` | `NOT NULL UNIQUE` | - | Descriptive food name. |
-  | `description` | `text` | - | - | Ingredient details. |
+  | `description` | `text` | - | - | Food item details. |
   | `calories_per_100g` | `numeric(6,2)` | `NOT NULL` | - | Calorie count per 100g. |
   | `protein_per_100g` | `numeric(5,2)` | `NOT NULL` | - | Protein content (g) per 100g. |
   | `carbs_per_100g` | `numeric(5,2)` | `NOT NULL` | - | Carbohydrates content (g) per 100g. |
@@ -29,19 +29,31 @@ Defines base food items and their macronutrient distributions per 100 grams.
   | `fiber_per_100g` | `numeric(5,2)` | `NOT NULL` | `0.00` | Dietary fiber (g) per 100g. |
   | `sodium_mg_per_100g` | `numeric(10,2)` | `NOT NULL` | `0.00` | Sodium level (mg) per 100g. |
   | `micronutrients` | `jsonb` | `NOT NULL` | `'{}'` | Key-value store for vitamins and minerals. |
-  | `estimated_cost_per_100g` | `numeric(6,2)` | `NOT NULL` | `0.00` | Estimated cost (utilized by the Budget Agent). |
-  | `price_currency` | `text` | `NOT NULL` | `'INR'` | Price currency code. |
   | `barcode` | `text` | - | - | UPC/EAN barcode string. |
   | `is_verified` | `boolean` | `NOT NULL` | `false` | True if verified by nutrition experts. |
   | `food_code` | `text` | `UNIQUE` | - | Internal/standard system code. |
   | `primary_source` | `text` | - | - | Origin source registry (e.g. `'Anuvaad INDB'`). |
+  | `raw_food_cost_id` | `uuid` | `REFERENCES raw_food_costs(id) ON DELETE SET NULL` | - | Optional link to raw food cost pattern. |
   | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Record creation timestamp. |
   | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Record change timestamp. |
 
-### `ingredient_portions`
+### `raw_food_costs`
+Defines price guidelines per 100 grams for generic food patterns in India (utilized by the Budget Agent for dynamic cost evaluation).
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Cost pattern identifier. |
+  | `food_pattern` | `text` | `NOT NULL UNIQUE` | - | Pattern for name matching (e.g. `'chicken'`). |
+  | `cost_per_100g` | `numeric(10,2)` | `NOT NULL` | - | Price per 100 grams in India. |
+  | `price_currency` | `text` | `NOT NULL` | `'INR'` | Price currency code. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Record creation timestamp. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Record change timestamp. |
+
+### `food_item_portions`
 Specifies portion equivalence factors to convert serving units (e.g., cups, slices) into grams.
 
-* **Schema**: `id` (PRIMARY KEY), `ingredient_id` (foreign key ingredients), `serving_unit` (e.g. `'cup'`), `grams_equivalent` (checking `> 0`), `created_at`, `updated_at`. Joint unique index on `(ingredient_id, serving_unit)`.
+* **Schema**: `id` (PRIMARY KEY), `food_item_id` (foreign key food_items), `serving_unit` (e.g. `'cup'`), `grams_equivalent` (checking `> 0`), `created_at`, `updated_at`. Joint unique index on `(food_item_id, serving_unit)`.
 
 ---
 
@@ -63,13 +75,15 @@ Header metadata for food recipes.
   | `cook_time_minutes` | `integer` | - | - | Cooking duration in minutes. |
   | `servings` | `numeric(4,2)` | `NOT NULL` | `1.00` | Default servings yield. |
   | `cuisine` | `text` | - | - | Regional classification (e.g. `'North Indian'`). |
+  | `course` | `text` | - | - | Course category (e.g. `'Lunch'`, `'Breakfast'`). |
   | `dietary_tags` | `text[]` | `NOT NULL` | `'{}'` | Dietary categories (e.g. `{'Vegan', 'Gluten-Free'}`). |
+  | `source_url` | `text` | - | - | Original recipe URL source link. |
   | `is_public` | `boolean` | `NOT NULL` | `false` | True if visible to other platform users. |
 
-### `recipe_ingredients`
-Junction table tracking recipe ingredient requirements.
+### `recipe_food_items`
+Junction table tracking recipe food item requirements.
 
-* **Schema**: `recipe_id` (foreign key recipes), `ingredient_id` (foreign key ingredients), `quantity` (numeric), `unit` (e.g. `'g'`), `grams_equivalent` (computed weight), `notes`. Joint primary key on `(recipe_id, ingredient_id)`.
+* **Schema**: `recipe_id` (foreign key recipes), `food_item_id` (foreign key food_items), `quantity` (numeric), `unit` (e.g. `'g'`), `grams_equivalent` (computed weight), `notes`. Joint primary key on `(recipe_id, food_item_id)`.
 
 ---
 
@@ -86,7 +100,7 @@ Saves historical nutrient intakes consumed by users.
   | `logged_at` | `timestamptz` | `NOT NULL` | `now()` | Date and time consumed. |
   | `meal_type` | `text` | `NOT NULL` | - | Meal segment: `'breakfast'`, `'lunch'`, `'dinner'`, or `'snack'`. |
   | `recipe_id` | `uuid` | `REFERENCES recipes(id) ON DELETE SET NULL` | - | Referencing recipe if logged as a whole dish. |
-  | `ingredient_id` | `uuid` | `REFERENCES ingredients(id) ON DELETE SET NULL` | - | Referencing ingredient if logged individually. |
+  | `food_item_id` | `uuid` | `REFERENCES food_items(id) ON DELETE SET NULL` | - | Referencing food item if logged individually. |
   | `custom_food_name` | `text` | - | - | Fallback text label if item not in catalog. |
   | `quantity` | `numeric(6,2)` | `NOT NULL` | - | Logged quantity. |
   | `unit` | `text` | `NOT NULL` | - | Unit (e.g. `'servings'`, `'grams'`). |
@@ -96,3 +110,4 @@ Saves historical nutrient intakes consumed by users.
   | `fats` | `numeric(5,2)` | `NOT NULL` | - | Denormalized fat summary (g). |
   | `micronutrients_snapshot` | `jsonb` | `NOT NULL` | `'{}'` | Snapshot of micro nutrients at entry time. |
   | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Log creation timestamp. |
+

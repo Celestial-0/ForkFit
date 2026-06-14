@@ -17,7 +17,7 @@ The agent evaluates candidate recipes by following these verification checks:
 
 ### Allergen Verification
 * Checks the user's list of allergies (e.g. `{'peanuts', 'shellfish'}`) from the context.
-* For each candidate recipe, it queries the database helper `get_recipe_allergen_ingredients` to check if it contains any ingredients matching these allergens.
+* For each candidate recipe, it queries the database helper `get_recipe_allergen_food_items` to check if it contains any food items matching these allergens.
 * Recipes containing allergens are added to the `blocked_recipes` list, documenting the specific allergen match.
 
 ### Medical Condition Auditing

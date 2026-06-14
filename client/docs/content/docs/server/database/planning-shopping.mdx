@@ -39,7 +39,7 @@ Individual meals scheduled on specific days under a plan.
   | `planned_date` | `date` | `NOT NULL` | - | Target day of calendar. |
   | `meal_type` | `text` | `NOT NULL` | - | Planned meal category: `'breakfast'`, `'lunch'`, `'dinner'`, `'snack'`. |
   | `recipe_id` | `uuid` | `REFERENCES recipes(id) ON DELETE SET NULL` | - | Reference to planned recipe. |
-  | `ingredient_id` | `uuid` | `REFERENCES ingredients(id) ON DELETE SET NULL` | - | Reference to planned ingredient. |
+  | `food_item_id` | `uuid` | `REFERENCES food_items(id) ON DELETE SET NULL` | - | Reference to planned food item. |
   | `custom_food_name` | `text` | - | - | Planned custom fallback label. |
   | `servings` | `numeric(4,2)` | `NOT NULL` | `1.00` | Target portion / servings. |
   | `consumed` | `boolean` | `NOT NULL` | `false` | Set to true when checked. Triggers creation of a [food_log](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql#L62) entry. |
@@ -57,7 +57,7 @@ Tracks the user's available cooking items at home.
   | :--- | :--- | :--- | :--- | :--- |
   | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Pantry record ID. |
   | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
-  | `ingredient_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [ingredients.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql#L4) (ON DELETE CASCADE). |
+  | `food_item_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [food_items.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql#L4) (ON DELETE CASCADE). |
   | `quantity` | `numeric(6,2)` | `NOT NULL` | - | Available stock. |
   | `unit` | `text` | `NOT NULL` | - | Stock unit (e.g. `'g'`, `'ml'`, `'piece'`). |
   | `expires_at` | `date` | - | - | Expiration check. Used to flag upcoming waste. |
@@ -75,4 +75,4 @@ Shopping lists generated from meal programs.
 
 ### `shopping_list_items`
 Detailed elements on a shopping list.
-* **Schema**: `id` (PRIMARY KEY), `shopping_list_id` (foreign key shopping_lists), `ingredient_id` (foreign key ingredients), `custom_item_name`, `quantity`, `unit`, `is_acquired` (default `false`), `category` (default `'Other'`, e.g., `'Produce'`), `created_at`, `updated_at`.
+* **Schema**: `id` (PRIMARY KEY), `shopping_list_id` (foreign key shopping_lists), `food_item_id` (foreign key food_items), `custom_item_name`, `quantity`, `unit`, `is_acquired` (default `false`), `category` (default `'Other'`, e.g., `'Produce'`), `created_at`, `updated_at`.

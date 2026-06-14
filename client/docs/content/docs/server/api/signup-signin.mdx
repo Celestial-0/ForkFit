@@ -1,11 +1,11 @@
 ---
 title: Signup & Signin 
-description: API endpoints for creating accounts, signing in, listing sessions, and revoking access.
+description: API endpoints for creating accounts, signing in, listing sessions, email verifications, password resets, and OAuth.
 ---
 
 # Signup & Signin 
 
-All authentication routes are nested under `/api/v1/auth`.
+All authentication and session routes are nested under `/api/v1/auth`.
 
 ---
 
@@ -22,7 +22,7 @@ Registers a new user account on the platform.
     type={{
       email: { type: 'string', required: true, description: 'Unique user email address.' },
       password: { type: 'string', required: true, description: 'Min 8 characters password.' },
-      full_name: { type: 'string', required: true, description: 'User full name.' }
+      full_name: { type: 'string', required: false, description: 'User full name.' }
     }}
   />
 
@@ -41,6 +41,22 @@ Logs a user in and returns a bearer access token.
       password: { type: 'string', required: true, description: 'Account password.' }
     }}
   />
+
+---
+
+### Sign Out Current Device
+
+`POST /api/v1/auth/signout`
+
+Revokes the active Bearer token and terminates the current user session.
+
+---
+
+### Sign Out All Devices
+
+`POST /api/v1/auth/signout-all`
+
+Revokes all active Bearer tokens and terminates all login sessions across devices.
 
 ---
 
@@ -66,3 +82,64 @@ Terminates a specific session, instantly logging that device out.
       id: { type: 'string', required: true, description: 'The UUID of the session to revoke.' }
     }}
   />
+
+---
+
+## 3. Email Verification & OTPs
+
+### Send Verification OTP
+
+`POST /api/v1/auth/send-verification-otp`
+
+Dispatches a verification OTP code to the user's email.
+
+---
+
+### Verify Email Address
+
+`POST /api/v1/auth/verify-email`
+
+Submits the email verification OTP to mark the user's account status as verified.
+
+---
+
+### Forgot Password
+
+`POST /api/v1/auth/forgot-password`
+
+Dispatches a password reset OTP code to the registered email address.
+
+---
+
+### Reset Password
+
+`POST /api/v1/auth/reset-password`
+
+Allows users to reset their account password by providing the reset OTP code and a new password.
+
+---
+
+### Change Password
+
+`POST /api/v1/auth/change-password`
+
+Allows currently logged-in users to update their password by providing the old and new passwords.
+
+---
+
+## 4. OAuth Integrations
+
+### OAuth Authorize Redirect
+
+`GET /api/v1/auth/oauth/{provider}/authorize`
+
+Initiates OAuth authentication flow by redirecting the user to the third-party provider login page (e.g. `'google'`, `'github'`).
+
+---
+
+### OAuth Callback
+
+`GET /api/v1/auth/oauth/{provider}/callback`
+
+Handles the OAuth redirect callback from the provider to complete user session signing in.
+

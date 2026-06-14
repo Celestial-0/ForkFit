@@ -1,21 +1,53 @@
 ---
 title: Meal Plans & Pantry 
-description: API routes for meal schedulers, pantry inventories, and auto-generated shopping lists.
+description: API routes for meal plans creation, scheduler logs, pantry inventories, and generated shopping lists.
 ---
 
 # Meal Plans & Pantry 
 
-Endpoints for organizing diets, tracking stored ingredients, and managing shopping lists.
+Endpoints for organizing diets, tracking stored food items, and managing shopping lists.
 
 ---
 
 ## 1. Meal Plans
 
+### List Meal Plans
+
+`GET /api/v1/meal-plans`
+
+Retrieves historical meal plans generated for the user.
+
+---
+
+### Create Meal Plan
+
+`POST /api/v1/meal-plans`
+
+Saves a structured weekly or daily meal plan.
+
+---
+
 ### Get Active Meal Plan
 
 `GET /api/v1/meal-plans/active`
 
-Returns the currently running schedule of meals.
+Returns the currently running schedule of meals and daily macro bounds.
+
+---
+
+### Get Meal Plan Details
+
+`GET /api/v1/meal-plans/{id}`
+
+Retrieves scheduled slots and recipe targets for a specific plan ID.
+
+---
+
+### Toggle Plan Active State
+
+`PATCH /api/v1/meal-plans/{id}/status`
+
+Toggles the active status of a meal plan.
 
 ---
 
@@ -23,17 +55,25 @@ Returns the currently running schedule of meals.
 
 `PATCH /api/v1/meal-plans/{id}/items/{item_id}/consumed`
 
-Marks a scheduled meal item as consumed or skipped.
+Marks a scheduled meal item as consumed or skipped. Marks user consumed history by triggering a food log entry automatically.
 
 ---
 
-## 2. Pantry & Shopping Lists
+## 2. Pantry Inventory
 
 ### List Pantry Inventory
 
 `GET /api/v1/pantry`
 
-Returns all items currently stored in the user's kitchen pantry.
+Returns all food items currently stored in the user's kitchen pantry.
+
+---
+
+### Add Pantry Item
+
+`POST /api/v1/pantry`
+
+Add a food item to the user's digital pantry inventory.
 
 ---
 
@@ -45,8 +85,43 @@ Updates expiration date or quantity of a pantry item.
 
 ---
 
-### Get Shopping List
+### Remove Pantry Item
+
+`DELETE /api/v1/pantry/{id}`
+
+Deletes an item from the digital pantry inventory.
+
+---
+
+## 3. Shopping Lists
+
+### List Shopping Lists
+
+`GET /api/v1/shopping-lists`
+
+Retrieves all grocery lists generated.
+
+---
+
+### Create Shopping List
+
+`POST /api/v1/shopping-lists`
+
+Saves a custom or plan-generated shopping list.
+
+---
+
+### Get Shopping List Details
 
 `GET /api/v1/shopping-lists/{id}`
 
-Returns the shopping list items and whether they have been acquired.
+Returns the shopping list items, estimated costs, and whether they have been acquired.
+
+---
+
+### Toggle Item Acquired Status
+
+`PATCH /api/v1/shopping-lists/{id}/items/{item_id}`
+
+Marks an item on the shopping list as acquired.
+
