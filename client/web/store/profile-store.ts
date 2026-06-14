@@ -138,8 +138,8 @@ export const useProfileStore = create<ProfileState>((set, get) => {
     },
 
     fetchBiometrics: async () => {
-      await handleAction(getBiometricsApi, (data) => {
-        set({ biometricLogs: data, isLoading: false });
+      await handleAction(getBiometricsApi, (res) => {
+        set({ biometricLogs: res.data, isLoading: false });
       });
     },
 
@@ -156,8 +156,8 @@ export const useProfileStore = create<ProfileState>((set, get) => {
     },
 
     fetchWorkouts: async () => {
-      await handleAction(getWorkoutsApi, (data) => {
-        set({ workoutLogs: data, isLoading: false });
+      await handleAction(getWorkoutsApi, (res) => {
+        set({ workoutLogs: res.data, isLoading: false });
       });
     },
 

@@ -198,12 +198,22 @@ export async function updateMedicalSafetyApi(
   return handleResponse<MedicalSafetyResponse>(response);
 }
 
-export async function getBiometricsApi(token: string): Promise<BiometricResponse[]> {
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+  };
+}
+
+export async function getBiometricsApi(token: string): Promise<PaginatedResponse<BiometricResponse>> {
   const response = await fetch(`${API_BASE_URL}/profile/biometrics`, {
     method: "GET",
     headers: getHeaders(token),
   });
-  return handleResponse<BiometricResponse[]>(response);
+  return handleResponse<PaginatedResponse<BiometricResponse>>(response);
 }
 
 export async function logBiometricApi(
@@ -218,12 +228,12 @@ export async function logBiometricApi(
   return handleResponse<BiometricResponse>(response);
 }
 
-export async function getWorkoutsApi(token: string): Promise<WorkoutResponse[]> {
+export async function getWorkoutsApi(token: string): Promise<PaginatedResponse<WorkoutResponse>> {
   const response = await fetch(`${API_BASE_URL}/profile/workouts`, {
     method: "GET",
     headers: getHeaders(token),
   });
-  return handleResponse<WorkoutResponse[]>(response);
+  return handleResponse<PaginatedResponse<WorkoutResponse>>(response);
 }
 
 export async function logWorkoutApi(
