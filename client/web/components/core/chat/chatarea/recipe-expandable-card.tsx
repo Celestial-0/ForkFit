@@ -167,6 +167,8 @@ export function RecipeExpandableCard({
                 <Image
                   src={recipeImage}
                   alt={initialTitle}
+                  width="800"
+                  height="200"
                   className="h-full w-full object-cover object-center"
                 />
                 <div className="absolute bottom-4 left-6 z-20 pr-12">
