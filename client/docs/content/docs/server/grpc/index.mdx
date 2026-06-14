@@ -1,13 +1,13 @@
 ---
 title: gRPC Intelligence Service
-description: Protobuf and gRPC schemas for internal service communications.
+description: Protocol Buffers schema and gRPC endpoint reference for internal service communication.
 ---
 
 # gRPC Intelligence Service
 
-Internal communication between the Rust API gateway and the Python AI intelligence service is conducted over **gRPC** using **Protocol Buffers v3**.
+Internal communication between the Rust API gateway and the Python AI intelligence service is conducted over **gRPC** using **Protocol Buffers v3**. The service executes on port `50051`.
 
-The service is defined in `server/proto/intelligence/v1/intelligence.proto`.
+The schema is defined in [intelligence.proto](file:///c:/Users/300079/CapCode/ForkFit/server/proto/intelligence/v1/intelligence.proto).
 
 ---
 
@@ -29,38 +29,158 @@ service IntelligenceService {
 
 ---
 
+## RPC Methods
+
+### `ProcessIntent`
+Extracts high-level nutritional goals, constraints, dietary type, and budget limits from the raw natural language user prompt.
+
+* **Request Type**: `IntentRequest`
+* **Response Type**: `IntentResponse`
+
+### `OrchestrateAgentGraph`
+Runs the multi-agent reasoning chain (Planner, Safety, Nutrition, Budget, etc.) via LangGraph. Yields a server-side stream of state updates, intermediate tool traces, progressive text tokens, and layout blueprints.
+
+* **Request Type**: `OrchestrateGraphRequest`
+* **Response Type**: `stream OrchestrateGraphResponse`
+
+### `TriggerReflection`
+An asynchronous feedback-triggered learning node. Evaluates user ratings/text feedback to extract semantic rules and habits which are committed to vector database memory.
+
+* **Request Type**: `ReflectionRequest`
+* **Response Type**: `ReflectionResponse`
+
+---
+
 ## Message Schemas
 
 ### 1. Intent Analysis
 
-* **`IntentRequest`**
-  <TypeTable
-    type={{
-      prompt: { type: 'string', required: true, description: 'Raw query from the user.' },
-      user_id: { type: 'string', required: true, description: 'User UUID identifier.' }
-    }}
-  />
+#### `IntentRequest`
+<TypeTable
+  type={{
+    prompt: { type: 'string', required: true, description: 'Raw natural language input query from the user.' },
+    user_id: { type: 'string', required: true, description: 'Unique user UUID identifier.' }
+  }}
+/>
 
-* **`IntentResponse`**
-  <TypeTable
-    type={{
-      goal: { type: 'string', description: 'Classified goal (e.g. muscle_gain, weight_loss).' },
-      diet: { type: 'string', description: 'Dietary type (e.g. vegan, omnivore, keto).' },
-      budget_limit: { type: 'double', description: 'Extracted price threshold per day/week.' },
-      constraints: { type: 'string[]', description: 'User diet or allergy constraints.' }
-    }}
-  />
+#### `IntentResponse`
+<TypeTable
+  type={{
+    goal: { type: 'string', description: 'Classified primary goal (e.g. muscle_gain, weight_loss, maintenance).' },
+    diet: { type: 'string', description: 'Classified dietary style (e.g. vegetarian, vegan, keto, omnivore).' },
+    budget_limit: { type: 'double', description: 'Extracted numeric maximum budget limit per day or week.' },
+    budget_currency: { type: 'string', description: 'Currency code for the budget limit (e.g. INR, USD).' },
+    timeline: { type: 'string', description: 'Timeline boundary for planning (e.g. daily, weekly).' },
+    constraints: { type: 'string[]', description: 'Extracted dietary or allergy constraints (e.g. lactose intolerant).' },
+    raw_analysis_json: { type: 'string', description: 'Raw JSON payload representing detailed parameters parsed by the LLM.' }
+  }}
+/>
 
 ---
 
 ### 2. Agent Orchestration
 
-* **`OrchestrateGraphRequest`**
-  Sends the query along with the full database profile context of the user (allergies, targets, macros) and conversation history to LangGraph.
+#### `OrchestrateGraphRequest`
+<TypeTable
+  type={{
+    trace_id: { type: 'string', required: true, description: 'Unique request execution trace ID for auditing.' },
+    session_id: { type: 'string', required: true, description: 'Active chat session/thread UUID.' },
+    prompt: { type: 'string', required: true, description: 'Raw query from the user.' },
+    context: { type: 'UserContext', required: true, description: 'Complete profile, health, and dietary context package.' },
+    history: { type: 'ChatMessageHistory[]', description: 'Previous conversation history for contextual memory.' }
+  }}
+/>
 
-* **`OrchestrateGraphResponse` (Streamed)**
-  A streamed envelope payload yielding updates in a `oneof` wrapper:
-  * **`AgentStepUpdate`**: Trace logging of node execution (agent name, status, tool payload inputs/outputs).
-  * **`TextDelta`**: Progressively streamed LLM text tokens for real-time rendering.
-  * **`UIElement`**: Dynamic configurations (charts, timelines) for custom client layouts.
-  * **`final_text`**: Complete structured reply.
+#### `UserContext`
+<TypeTable
+  type={{
+    user_id: { type: 'string', required: true, description: 'Unique identifier of the user (UUID).' },
+    allergies: { type: 'string[]', description: 'List of user allergies (e.g. peanut, gluten).' },
+    medical_conditions: { type: 'string[]', description: 'List of user\'s medical conditions (e.g. diabetic, hypertension).' },
+    preferred_foods: { type: 'string[]', description: 'Foods the user prefers to eat.' },
+    avoided_foods: { type: 'string[]', description: 'Foods the user wants to avoid.' },
+    daily_calorie_target: { type: 'double', description: 'Daily calorie target (kcal).' },
+    target_protein_g: { type: 'double', description: 'Daily protein target in grams.' },
+    target_carbs_g: { type: 'double', description: 'Daily carbohydrate target in grams.' },
+    target_fat_g: { type: 'double', description: 'Daily fat target in grams.' },
+    budget_limit: { type: 'double', description: 'User\'s configured budget limit.' },
+    preferred_cuisine: { type: 'string', description: 'User\'s preferred cuisine style (e.g. Indian, Italian).' }
+  }}
+/>
+
+#### `ChatMessageHistory`
+<TypeTable
+  type={{
+    role: { type: 'string', required: true, description: 'Sender role: "user" or "assistant".' },
+    content: { type: 'string', required: true, description: 'Text message content.' },
+    sent_at: { type: 'google.protobuf.Timestamp', description: 'Timestamp when the message was sent.' }
+  }}
+/>
+
+#### `OrchestrateGraphResponse`
+<TypeTable
+  type={{
+    trace_id: { type: 'string', required: true, description: 'Unique request execution trace ID.' },
+    step_update: { type: 'AgentStepUpdate', description: 'Intermediate trace/state update. Part of the payload oneof.' },
+    final_text: { type: 'string', description: 'Complete final markdown text answer. Part of the payload oneof.' },
+    ui_element: { type: 'UIElement', description: 'Visual card component specification. Part of the payload oneof.' },
+    text_delta: { type: 'TextDelta', description: 'Real-time streamed text token. Part of the payload oneof.' }
+  }}
+/>
+
+#### `AgentStepUpdate`
+<TypeTable
+  type={{
+    step_id: { type: 'string', required: true, description: 'Unique step execution ID.' },
+    agent_name: { type: 'string', required: true, description: 'Name of the running agent node (e.g. Safety, Nutrition).' },
+    status: { type: 'string', required: true, description: 'Status of the step execution: "running", "completed", "failed".' },
+    step_type: { type: 'string', required: true, description: 'Operation type: "llm_call", "tool_call", "retrieval", "validation".' },
+    input_payload_json: { type: 'string', description: 'Input payload in JSON string format.' },
+    output_payload_json: { type: 'string', description: 'Output payload in JSON string format.' },
+    latency_ms: { type: 'int64', description: 'Latency/duration of the execution step in milliseconds.' },
+    error_message: { type: 'string', description: 'Populated error description if status is "failed".' }
+  }}
+/>
+
+#### `UIElement`
+<TypeTable
+  type={{
+    type: { type: 'string', required: true, description: 'Visual component type: "chart", "mermaid", "timeline", "recipe_card", "dashboard".' },
+    title: { type: 'string', description: 'Friendly header/label for the client widget.' },
+    config_json: { type: 'string', description: 'Visual configuration parameters in JSON format.' },
+    data_json: { type: 'string', description: 'Data content in JSON format for the component to render.' }
+  }}
+/>
+
+#### `TextDelta`
+<TypeTable
+  type={{
+    content: { type: 'string', description: 'Text fragment or token content.' },
+    delta_index: { type: 'int32', description: 'Monotonically increasing index in the delta stream.' },
+    is_complete: { type: 'bool', description: 'True if this is the final token in the stream.' },
+    delta_type: { type: 'string', description: 'Type of stream fragment (e.g. markdown, thinking, tool_call).' }
+  }}
+/>
+
+---
+
+### 3. Agent Feedback & Reflection
+
+#### `ReflectionRequest`
+<TypeTable
+  type={{
+    user_id: { type: 'string', required: true, description: 'Unique user UUID identifier.' },
+    session_id: { type: 'string', required: true, description: 'Active chat session/thread UUID.' },
+    chat_message_id: { type: 'string', required: true, description: 'Identifier of the chat message being evaluated.' },
+    feedback_rating: { type: 'int32', required: true, description: 'User feedback rating (typically 1 to 5).' },
+    feedback_text: { type: 'string', description: 'Detailed user comments or qualitative reviews.' }
+  }}
+/>
+
+#### `ReflectionResponse`
+<TypeTable
+  type={{
+    success: { type: 'bool', description: 'Indicates if the reflection and memory extraction executed successfully.' },
+    extracted_memories: { type: 'string[]', description: 'Extracted habits/rules committed to the user\'s semantic profile memory.' }
+  }}
+/>

@@ -1,0 +1,52 @@
+---
+title: Agents Overview
+description: Overview of the ForkFit multi-agent cognitive architecture and shared helper utilities.
+---
+
+# Agents Overview
+
+ForkFit uses a collection of specialized, autonomous agents that collaborate within a cyclic state graph to build personalized, safe, and cost-effective meal schedules.
+
+The agents are implemented in Python under the `server/intelligence/src/agents/` directory.
+
+---
+
+## 1. Agent Architecture
+
+Each agent is designed as a modular function that reads from and writes to the global `GraphState` TypedDict. Every specialist agent follows a uniform structure:
+1. **Prerequisite Check**: Inspects `state["required_agents"]` to verify if it is needed. If not, it returns immediately (performing a fast no-op) to save execution latency.
+2. **Context Reading**: Extracts specific metrics (e.g. biometrics, goals, or pantry stock) from the hydrated context.
+3. **Execution**: Performs LLM queries, database operations, or mathematical aggregations inside a telemetry timer.
+4. **Telemetry Logging**: Emits step updates (such as input/output payloads and latency) back to the server and client.
+5. **State Update**: Updates the state dict with its results and returns.
+
+---
+
+## 2. Shared Helpers
+
+Common utilities are shared across agent modules to maintain DRY (Don't Repeat Yourself) design principles.
+
+Implementation: [helpers.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/helpers.py)
+
+### Timer Class
+A context manager used to measure the execution latency of agent tasks in wall-clock milliseconds:
+```python
+t = Timer()
+with t:
+    await run_agent_workflow()
+print(f"Elapsed: {t.ms}ms")
+```
+
+### emit_step Function
+Serializes and streams real-time execution steps (inputs, outputs, latency, status) back to gRPC stream clients:
+```python
+await emit_step(
+    callback=state.get("_step_callback"),
+    agent_name="Nutrition",
+    status="completed",
+    step_type="aggregation",
+    input_data=input_data,
+    output_data=output_data,
+    latency_ms=timer.ms,
+)
+```

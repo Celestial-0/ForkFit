@@ -1,0 +1,36 @@
+---
+title: Safety Agent
+description: Safety and Medical audit agent verifying recipe allergen compatibility and condition alerts.
+---
+
+# Safety Agent
+
+The **Safety Agent** audits candidate recipes against the user's active profile parameters to prevent allergen exposures and flag medical condition warnings.
+
+Implementation: [safety.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/safety.py)
+
+---
+
+## 1. Safety Audit Workflow
+
+The agent evaluates candidate recipes by following these verification checks:
+
+### Allergen Verification
+* Checks the user's list of allergies (e.g. `{'peanuts', 'shellfish'}`) from the context.
+* For each candidate recipe, it queries the database helper `get_recipe_allergen_ingredients` to check if it contains any ingredients matching these allergens.
+* Recipes containing allergens are added to the `blocked_recipes` list, documenting the specific allergen match.
+
+### Medical Condition Auditing
+* Inspects the user's medical conditions (e.g. `{'diabetes', 'hypertension'}`).
+* Generates warnings if a recipe could conflict with a condition:
+  * **Diabetes**: Flags warning alerts if recipes contain carbohydrates.
+  * **Hypertension**: Flags warning alerts if recipes contain sodium.
+
+---
+
+## 2. Execution Output
+
+The agent returns a `SafetyResult` payload:
+* `safe_recipe_ids` (list[str]): List of recipe UUIDs that passed the allergen audit.
+* `blocked_recipes` (list[dict]): Details of blocked recipes, including recipe ID, title, and the allergen block reason.
+* `warnings` (list[str]): General warnings related to medical conditions.

@@ -1,0 +1,32 @@
+---
+title: Budget Agent
+description: Budget Agent aggregating ingredient costs and suggesting cheap alternatives.
+---
+
+# Budget Agent
+
+The **Budget Agent** evaluates the total cost of candidate recipes and optimizes the ingredient selection to align with the user's daily budget limit.
+
+Implementation: [budget.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/budget.py)
+
+---
+
+## 1. Cost Aggregation
+
+For each candidate recipe, the agent:
+1. Resolves all ingredient components.
+2. Calls the database repository method `calculate_recipe_cost` to aggregate ingredient costs based on unit weight price.
+3. Computes the average cost of all candidate recipes.
+
+---
+
+## 2. Substitution Optimization
+
+If a budget limit is defined and the average candidate cost exceeds the limit:
+* The agent calls the LLM with a system context helper to generate ingredient substitution suggestions.
+* The prompt instructs the model to suggest three simple, healthy, and cheap substitutions (e.g. replacing quinoa with brown rice, or chicken breast with tofu/lentils) to reduce costs.
+* The suggestions are parsed into a bulleted list.
+
+* **Fallback**: If the LLM call fails, the agent registers default warning substitutions:
+  * *"Substitute imported grains with oats or rice"*
+  * *"Use local seasonal vegetables"*

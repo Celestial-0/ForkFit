@@ -1,0 +1,30 @@
+---
+title: Judge Agent
+description: Judge Agent performing plan quality validation and controling replan loops.
+---
+
+# Judge Agent
+
+The **Judge Agent** acts as the quality assurance gatekeeper. It audits the compiled plan against budget, safety, and variety rules. If any check fails, it increments the replan count and routes execution back to the planner with feedback instructions.
+
+Implementation: [judge.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/judge.py)
+
+---
+
+## 1. Plan Quality Auditing
+
+The agent validates the merged plan against three key rules:
+
+* **Budget Enforcement**: Checks if the total shopping cost exceeds the user's daily budget limit.
+* **Safety Enforcement**: Confirms the plan does not contain any placeholder meals marked *"SAFE SUBSTITUTE NEEDED"*.
+* **Variety Check**: Counts occurrences of each recipe across the plan. If any recipe is scheduled more than twice, it records a warning. If a recipe is repeated more than three times, it flags a validation failure.
+
+---
+
+## 2. Replan Routing
+
+The agent controls the loop logic:
+* **Verdict**: If any checks fail, `passed` is set to false and the validation failures are concatenated into `replan_instructions`.
+* **Routing Decision**: The `judge_router` checks the verdict:
+  * If the plan passes verification (`passed = true`), or the `replan_count` reaches the maximum limit (default 2), it routes to the **Visualization** node.
+  * If validation fails and attempts remain, it routes back to the **Planner** node, passing the replan instructions to guide the next iteration.

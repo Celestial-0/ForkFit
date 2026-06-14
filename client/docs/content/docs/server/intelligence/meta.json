@@ -1,6 +1,12 @@
 {
   "title": "Intelligence",
+  "defaultOpen": true,
   "pages": [
-    "index"
+    "index",
+    "graph-orchestrator",
+    "grpc-server",
+    "repositories-services",
+    "agents"
   ]
 }
+

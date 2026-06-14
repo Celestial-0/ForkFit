@@ -1,0 +1,117 @@
+---
+title: Identity & Access Management (IAM)
+description: Database tables governing user registration, credentials, OAuth connections, sessions, and Role-Based Access Control (RBAC).
+---
+
+# Identity & Access Management (IAM)
+
+This module defines the relational schema for managing user profiles, authentication credentials, third-party OAuth links, user sessions, and fine-grained access control permissions.
+
+Migrated by: [00001_create_iam.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql)
+
+---
+
+## 1. Core Users & Credentials
+
+### `users`
+Stores user identity metadata, verification flags, and current lifecycle status.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Unique user identifier. |
+  | `email` | `citext` | `NOT NULL UNIQUE` | - | Case-insensitive email address. |
+  | `email_verified` | `boolean` | `NOT NULL` | `false` | True if the user email has been verified. |
+  | `status` | `text` | `NOT NULL CHECK (status IN ('active', 'suspended', 'pending_verification'))` | `'active'` | Account status context. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Registration timestamp. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Timestamp of last user metadata change. |
+  | `deleted_at` | `timestamptz` | - | - | Timestamp for soft-delete audits. |
+
+### `user_credentials`
+Stores passwords using secure hashing algorithms.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Unique credential identifier. |
+  | `user_id` | `uuid` | `NOT NULL UNIQUE` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `password_hash` | `text` | `NOT NULL` | - | Securely hashed password. |
+  | `password_changed_at` | `timestamptz` | - | - | Track history of password changes. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Creation timestamp. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Update timestamp. |
+
+---
+
+## 2. OAuth Accounts
+
+### `oauth_accounts`
+Tracks third-party authorization providers (e.g., Google, GitHub) connected to user profiles.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Link identifier. |
+  | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `provider` | `text` | `NOT NULL` | - | OAuth provider name (e.g., `'google'`, `'github'`). |
+  | `provider_user_id` | `text` | `NOT NULL` | - | Provider-provided unique user ID. |
+  | `provider_email` | `text` | - | - | Provider profile email. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Link timestamp. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Update timestamp. |
+* **Unique Constraints**: `(provider, provider_user_id)` ensures OAuth links remain unique per provider account.
+
+---
+
+## 3. Session Management & OTP
+
+### `sessions`
+Records active browser/device sessions and refresh token hashes.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Session ID. |
+  | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `token_hash` | `text` | `NOT NULL UNIQUE` | - | SHA-256 hash of the session's active refresh token. |
+  | `ip_address` | `inet` | - | - | Connection IP address. |
+  | `user_agent` | `text` | - | - | Device browser user-agent. |
+  | `device_name` | `text` | - | - | Resolved device model / type. |
+  | `expires_at` | `timestamptz` | `NOT NULL` | - | Expiration timestamp. |
+  | `revoked_at` | `timestamptz` | - | - | Set if the session was explicitly logged out/revoked. |
+  | `last_seen_at` | `timestamptz` | - | - | Timestamp of the last API call. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Session creation timestamp. |
+
+### `otp_verifications`
+Saves temporary verification codes for account verification or password resets.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | OTP transaction identifier. |
+  | `email` | `citext` | `NOT NULL` | - | Destination email address. |
+  | `otp_hash` | `text` | `NOT NULL` | - | Hashed one-time verification password. |
+  | `purpose` | `text` | `NOT NULL` | - | Usage intent (e.g., `'email_verification'`, `'password_reset'`). |
+  | `attempts` | `integer` | `NOT NULL` | `0` | Number of input attempts (capped at 5). |
+  | `expires_at` | `timestamptz` | `NOT NULL` | - | OTP lifetime limit. |
+  | `consumed_at` | `timestamptz` | - | - | Timestamp when the OTP was verified. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Dispatch timestamp. |
+
+---
+
+## 4. Access Control (RBAC)
+
+### `roles`
+Stores access role classes.
+* **Schema**: `id` (UUID), `name` (unique: `'admin'`, `'user'`), `description`, `created_at`.
+
+### `permissions`
+Exposes resources and action limits for security mapping.
+* **Schema**: `id` (UUID), `resource` (e.g. `'roles'`), `action` (e.g. `'read'`, `'create'`), `created_at`.
+* **Unique Constraints**: `(resource, action)` ensures resource actions remain unique.
+
+### `role_permissions`
+Junction table mapping permissions to roles.
+* **Schema**: `role_id` (foreign key roles), `permission_id` (foreign key permissions). Joint primary key.
+
+### `user_roles`
+Junction table mapping users to roles.
+* **Schema**: `user_id` (foreign key users), `role_id` (foreign key roles), `assigned_at`. Joint primary key.

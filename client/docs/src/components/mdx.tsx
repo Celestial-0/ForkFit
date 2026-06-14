@@ -6,10 +6,12 @@ import { Callout } from './callout';
 import { Tabs, Tab } from './tabs';
 import { Steps, Step } from './steps';
 import { Accordion, Accordions } from './accordion';
+import { Mermaid } from '@/components/mdx/mermaid';
 
 export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
+    Mermaid,
     Card,
     Cards,
     TypeTable,

@@ -1,0 +1,75 @@
+---
+title: AI Orchestration & Memory
+description: Database tables governing LangGraph trace steps, execution states, pgvector RAG embeddings, and long-term user memory profiles.
+---
+
+# AI Orchestration & Memory
+
+This module configures agent execution tracing, step latency logging, pgvector RAG indexes, and long-term cognitive semantic memories.
+
+Migrated by: [00006_create_ai_orchestration_and_memory.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00006_create_ai_orchestration_and_memory.sql) and optimized in [00008_create_audit_logs_and_indexing.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00008_create_audit_logs_and_indexing.sql).
+
+---
+
+## 1. Execution Traces
+
+### `ai_execution_traces`
+Header level tracking for top level agent orchestration workflows (such as generating daily meal plans).
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Trace identifier. |
+  | `user_id` | `uuid` | `REFERENCES users(id) ON DELETE SET NULL` | - | User context trigger. |
+  | `session_type` | `text` | `NOT NULL` | - | Target function (e.g. `'chat_response'`, `'meal_plan_generation'`). |
+  | `session_id` | `uuid` | - | - | Reference linking back to trigger (e.g. `thread_id`). |
+  | `status` | `text` | `NOT NULL` | `'running'` | Execution state: `'running'`, `'completed'`, or `'failed'`. |
+  | `started_at` | `timestamptz` | `NOT NULL` | `now()` | Execution start timestamp. |
+  | `completed_at` | `timestamptz` | - | - | Execution end timestamp. |
+  | `total_latency_ms` | `integer` | - | - | Latency in milliseconds. |
+  | `total_tokens` | `integer` | - | `0` | Total LLM tokens used. |
+  | `total_cost` | `numeric(10,6)` | - | `0.000000` | Summed financial cost ($) of LLM queries. |
+
+### `ai_execution_steps`
+Granular tracker log for nested agent workflow stages.
+
+* **Schema**: `id` (PRIMARY KEY), `trace_id` (foreign key traces), `parent_step_id` (nested loop parent), `step_name` (e.g., `'Safety Agent check'`), `step_type` (e.g. `'llm_call'`, `'tool_call'`), `status`, `input_payload` (JSONB), `output_payload` (JSONB), `model_name` (e.g. `'gpt-4o'`), `prompt_tokens`, `completion_tokens`, `latency_ms`, `error_message`, `started_at`, `completed_at`.
+
+---
+
+## 2. Long-Term Memory
+
+### `agent_memories`
+Stores long term semantically extracted user attributes (preferences, habits, and medical rules).
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Memory record identifier. |
+  | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `memory_type` | `text` | `NOT NULL` | - | Classification: `'preference'`, `'restriction'`, or `'habit'`. |
+  | `content` | `text` | `NOT NULL` | - | Text content of the extracted preference. |
+  | `confidence` | `numeric(3,2)` | `NOT NULL` | `1.00` | System confidence score from 0.00 to 1.00. |
+  | `importance` | `integer` | `NOT NULL CHECK (importance >= 1 AND importance <= 10)` | `5` | Priority mapping. |
+  | `is_active` | `boolean` | `NOT NULL` | `true` | True if the memory is currently active. |
+  | `metadata` | `jsonb` | `NOT NULL` | `'{}'` | Source conversation contexts metadata. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Extracted date. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Last revision date. |
+
+---
+
+## 3. Vector Embeddings (RAG)
+
+These tables support Cosine Similarity search over raw catalogs and user memories. Originally declared with 2560 dimensions, they are rebuilt as 1536-dimension vectors to fit within pgvector HNSW limits.
+
+### `recipe_embeddings`
+Stores vector coordinates for recipe searches.
+* **Schema**: `recipe_id` (foreign key recipes), `embedding` (`vector(1536)`), `chunk_text`, `updated_at`.
+
+### `ingredient_embeddings`
+Stores vector coordinates for ingredient searches.
+* **Schema**: `ingredient_id` (foreign key ingredients), `embedding` (`vector(1536)`), `chunk_text`, `updated_at`.
+
+### `agent_memory_embeddings`
+Stores vector coordinates for semantic user memory searches.
+* **Schema**: `memory_id` (foreign key agent_memories), `embedding` (`vector(1536)`), `chunk_text`, `updated_at`.

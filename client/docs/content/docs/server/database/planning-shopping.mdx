@@ -1,0 +1,78 @@
+---
+title: Meal Planning & Shopping
+description: Database tables representing scheduled diet plans, user pantry logs, and dynamic shopping lists.
+---
+
+# Meal Planning & Shopping
+
+This module holds records for calendars, scheduled daily meals, physical pantry inventories, shopping lists, and active items.
+
+Migrated by: [00004_create_planning_and_shopping.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00004_create_planning_and_shopping.sql)
+
+---
+
+## 1. Calendars & Meal Plans
+
+### `meal_plans`
+Defines active plan programs.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Unique plan program ID. |
+  | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `name` | `text` | - | - | Custom plan program name (e.g. `'Lean Gain Phase'`). |
+  | `start_date` | `date` | `NOT NULL` | - | Plan start date. |
+  | `end_date` | `date` | `NOT NULL` | - | Plan end date. |
+  | `is_active` | `boolean` | `NOT NULL` | `true` | True if this is the active plan program. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Plan created timestamp. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Plan updated timestamp. |
+
+### `meal_plan_items`
+Individual meals scheduled on specific days under a plan.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Plan item identifier. |
+  | `meal_plan_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [meal_plans.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00004_create_planning_and_shopping.sql#L4) (ON DELETE CASCADE). |
+  | `planned_date` | `date` | `NOT NULL` | - | Target day of calendar. |
+  | `meal_type` | `text` | `NOT NULL` | - | Planned meal category: `'breakfast'`, `'lunch'`, `'dinner'`, `'snack'`. |
+  | `recipe_id` | `uuid` | `REFERENCES recipes(id) ON DELETE SET NULL` | - | Reference to planned recipe. |
+  | `ingredient_id` | `uuid` | `REFERENCES ingredients(id) ON DELETE SET NULL` | - | Reference to planned ingredient. |
+  | `custom_food_name` | `text` | - | - | Planned custom fallback label. |
+  | `servings` | `numeric(4,2)` | `NOT NULL` | `1.00` | Target portion / servings. |
+  | `consumed` | `boolean` | `NOT NULL` | `false` | Set to true when checked. Triggers creation of a [food_log](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql#L62) entry. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Creation timestamp. |
+
+---
+
+## 2. Pantry Inventory
+
+### `pantry_items`
+Tracks the user's available cooking items at home.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Pantry record ID. |
+  | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `ingredient_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [ingredients.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00003_create_recipes_and_nutrition.sql#L4) (ON DELETE CASCADE). |
+  | `quantity` | `numeric(6,2)` | `NOT NULL` | - | Available stock. |
+  | `unit` | `text` | `NOT NULL` | - | Stock unit (e.g. `'g'`, `'ml'`, `'piece'`). |
+  | `expires_at` | `date` | - | - | Expiration check. Used to flag upcoming waste. |
+  | `purchased_at` | `date` | - | - | Purchase date. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Record creation timestamp. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Record change timestamp. |
+
+---
+
+## 3. Shopping Lists
+
+### `shopping_lists`
+Shopping lists generated from meal programs.
+* **Schema**: `id` (PRIMARY KEY), `user_id` (foreign key users), `name` (list title), `status` (default `'active'`, can be `'completed'`, `'archived'`), `created_at`, `updated_at`.
+
+### `shopping_list_items`
+Detailed elements on a shopping list.
+* **Schema**: `id` (PRIMARY KEY), `shopping_list_id` (foreign key shopping_lists), `ingredient_id` (foreign key ingredients), `custom_item_name`, `quantity`, `unit`, `is_acquired` (default `false`), `category` (default `'Other'`, e.g., `'Produce'`), `created_at`, `updated_at`.

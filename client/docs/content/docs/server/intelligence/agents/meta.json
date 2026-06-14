@@ -1,0 +1,19 @@
+{
+  "title": "Agents",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "planner",
+    "intent",
+    "safety",
+    "nutrition",
+    "budget",
+    "culture",
+    "recipe",
+    "calendar",
+    "shopping",
+    "consensus",
+    "judge",
+    "visualization"
+  ]
+}

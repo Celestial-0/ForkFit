@@ -1,0 +1,44 @@
+---
+title: Calendar Agent
+description: Calendar Agent scheduling recipes into daily meal slots and adjusting for workouts.
+---
+
+# Calendar Agent
+
+The **Calendar Agent** schedules selected recipes into specific daily meal slots over the plan duration and adds portion suggestions or pre/post-workout snack slots based on physical activities.
+
+Implementation: [calendar.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/calendar.py)
+
+---
+
+## 1. Scheduling Logic
+
+The agent determines the schedule duration based on the user's timeline (e.g. 7 days for a weekly plan).
+
+It queries the chat model, utilizing a structured Pydantic schema (`CalendarDecision`) to generate the schedule:
+
+* **Pydantic Model Schema**:
+  ```python
+  class MealAssignment(BaseModel):
+      meal_type: str  # 'breakfast', 'lunch', 'dinner', 'snack'
+      recipe_id: str  # Recipe UUID
+      servings: float # Servings portion
+
+  class DailySchedule(BaseModel):
+      day_index: int
+      meals: list[MealAssignment]
+      notes: str
+
+  class CalendarDecision(BaseModel):
+      schedules: list[DailySchedule]
+      general_notes: str
+  ```
+
+---
+
+## 2. Fitness & Workout Adjustments
+
+The agent inspects recent workouts in the context and instructs the model to make adjustments:
+* If workouts are present, it schedules additional snack slots.
+* It adds specific portion suggestions or workout-related fitness advice (e.g. post-workout protein intake) in the daily notes.
+* The assigned slots are mapped to real calendar dates starting from today.

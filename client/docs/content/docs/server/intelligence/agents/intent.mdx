@@ -1,0 +1,42 @@
+---
+title: Intent Agent
+description: Structured intent classification parsing user natural language requests.
+---
+
+# Intent Agent
+
+The **Intent Agent** processes the user's natural language input before the execution graph starts, extracting structured constraints, goal metrics, timelines, and budgets.
+
+Implementation: [intent.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/intent.py)
+
+---
+
+## 1. Intent Extraction
+
+The agent queries the chat model to map the raw message prompt to the structured Pydantic blueprint (`IntentBlueprint`):
+
+* **Structured Fields Extracted**:
+  * `goal`: The target fitness goal (e.g. `'weight_loss'`, `'muscle_gain'`, `'fat_loss'`, `'maintenance'`, `'calorie_surplus'`).
+  * `diet`: Preferred dietary model (e.g. `'vegetarian'`, `'vegan'`, `'omnivore'`, `'keto'`, `'pescatarian'`, `'jain'`).
+  * `budget_limit` (float): Numeric cost cap per day.
+  * `budget_currency` (str): Currency code (defaults to `'INR'`).
+  * `timeline`: Plan duration scale: `'daily'` or `'weekly'`.
+  * `constraints`: List of ingredient exclusions or preferences (e.g. `['no eggs', 'high protein']`).
+  * `raw_analysis` (dict): LLM reasoning details.
+
+* **System Prompt Core**:
+  ```text
+  Extract the goal, diet, budget limit, budget currency, timeline, and any constraints.
+  Provide a detailed raw_analysis dict containing your reasoning.
+  ```
+
+---
+
+## 2. Fallback Verification
+
+If the structured output parsing throws an error, the agent logs the error context and returns a default blueprint:
+* **Goal**: `'maintenance'`
+* **Diet**: `'omnivore'`
+* **Timeline**: `'weekly'`
+* **Budget**: `0.0`
+* **Raw Analysis**: `{"error": "<exception_details>"}`

@@ -1,5 +1,5 @@
 ---
-title: Intelligence Agent (AI)
+title: Intelligence Agent
 description: Python cognitive reasoning engine, LangGraph routing, and vector memory.
 ---
 
@@ -13,7 +13,8 @@ The ForkFit intelligence core is a Python application executing advanced cogniti
 
 The orchestrator utilizes **LangGraph** to execute a cyclic state graph. Each node runs a specialized LLM agent or evaluation tool:
 
-```mermaid
+<Mermaid
+  chart="
 graph TD
     UserQuery[User Query] --> Gateway[Gateway Agent]
     Gateway --> Safety[Safety & Medical Agent]
@@ -21,8 +22,8 @@ graph TD
     Safety -- Rejected --> Block[System Alert Node]
     Nutrition --> Budget[Budget & Shopping Agent]
     Budget --> Generator[Dynamic UI/Text Generator]
-    Generator --> Response[Final Stream Response]
-```
+    Generator --> Response[Final Stream Response]"
+/>
 
 ### Core Cognitive Agents
 1. **Safety & Medical Agent**: Analyzes user's biometrics, safety constraints (e.g. allergies, kidney issues) to check if the food or plan is medically safe.

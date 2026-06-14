@@ -54,7 +54,8 @@ Migrations are located in `server/db/migrations/` and cover the following schema
 
 Here is a simplified diagram of how the primary tables connect:
 
-```mermaid
+<Mermaid
+  chart={`
 erDiagram
     users ||--o{ user_sessions : "has sessions"
     users ||--|| user_profiles : "has profile"
@@ -68,7 +69,8 @@ erDiagram
     ingredients ||--o{ recipe_ingredients : "used in"
     meal_plans ||--o{ meal_plan_items : "contains"
     chat_threads ||--o{ chat_messages : "contains"
-```
+`}
+/>
 
 ---
 

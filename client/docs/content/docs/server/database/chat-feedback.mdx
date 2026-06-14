@@ -1,0 +1,59 @@
+---
+title: Chat & User Feedback
+description: Database tables capturing agent conversation histories and user satisfaction reviews.
+---
+
+# Chat & User Feedback
+
+This module manages real-time messaging histories with AI coaches (Nutritionists, Chefs) and logs user satisfaction ratings on system outputs.
+
+Migrated by: [00005_create_chat_and_feedback.sql](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00005_create_chat_and_feedback.sql)
+
+---
+
+## 1. Chat Threads & Histories
+
+### `chat_threads`
+Header records for persistent chat sessions.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Thread identifier. |
+  | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `title` | `text` | - | - | Optional descriptive thread header. |
+  | `agent_type` | `text` | `NOT NULL` | `'nutritionist'` | Target AI Persona: `'nutritionist'` or `'chef'`. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Thread creation timestamp. |
+  | `updated_at` | `timestamptz` | `NOT NULL` | `now()` | Last message timestamp. |
+
+### `chat_messages`
+Stores individual conversation blocks inside threads.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Message identifier. |
+  | `thread_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [chat_threads.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00005_create_chat_and_feedback.sql#L4) (ON DELETE CASCADE). |
+  | `sender_role` | `text` | `NOT NULL` | - | Message author role: `'user'`, `'assistant'`, or `'system'`. |
+  | `content` | `text` | `NOT NULL` | - | Message body text. Supports markdown. |
+  | `metadata` | `jsonb` | `NOT NULL` | `'{}'` | Dynamic payload tracking LLM configurations, tool calls, and classification intents. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Message timestamp. |
+
+---
+
+## 2. User Feedback
+
+### `user_feedbacks`
+Captures ratings and qualitative reviews on chat outputs, meal plans, or generated recipes.
+
+* **Schema**:
+  | Column | Type | Constraints | Default | Description |
+  | :--- | :--- | :--- | :--- | :--- |
+  | `id` | `uuid` | `PRIMARY KEY` | `gen_random_uuid()` | Feedback record identifier. |
+  | `user_id` | `uuid` | `NOT NULL` | - | Foreign key referencing [users.id](file:///c:/Users/300079/CapCode/ForkFit/server/db/migrations/00001_create_iam.sql#L9) (ON DELETE CASCADE). |
+  | `category` | `text` | `NOT NULL` | - | target category: `'chat_response'`, `'meal_plan'`, or `'recipe'`. |
+  | `reference_id` | `uuid` | - | - | UUID of the target item (e.g. `chat_messages.id`). |
+  | `rating` | `integer` | `NOT NULL CHECK (rating >= 1 AND rating <= 5)` | - | Satisfaction rating from 1 (poor) to 5 (excellent). |
+  | `comment` | `text` | - | - | User written comments. |
+  | `metadata` | `jsonb` | `NOT NULL` | `'{}'` | Additional debugging parameters. |
+  | `created_at` | `timestamptz` | `NOT NULL` | `now()` | Submission timestamp. |
