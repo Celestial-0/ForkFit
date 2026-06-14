@@ -4,7 +4,7 @@ use crate::common::error::AppError;
 
 #[derive(Debug, Error)]
 pub enum RecipeError {
-    #[error("recipe or ingredient not found")]
+    #[error("recipe or food item not found")]
     NotFound,
     #[error("validation error: {0}")]
     ValidationError(String),

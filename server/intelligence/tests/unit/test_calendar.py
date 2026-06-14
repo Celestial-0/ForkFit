@@ -90,7 +90,7 @@ async def test_calendar_node_success(mock_get_chat_model):
     assert m2["cost"] == 225.0
 
     mock_callback.assert_called_once()
-    mock_llm.with_structured_output.assert_called_once_with(CalendarDecision)
+    mock_llm.with_structured_output.assert_called_once_with(CalendarDecision, method="json_mode")
 
 
 @pytest.mark.asyncio

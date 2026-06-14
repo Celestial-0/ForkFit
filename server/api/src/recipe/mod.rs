@@ -12,11 +12,11 @@ pub mod service;
 pub mod types;
 pub mod handlers;
 
-pub fn ingredients_router() -> Router<Arc<AppState>> {
+pub fn food_items_router() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/", post(handlers::create_ingredient))
-        .route("/search", get(handlers::search_ingredients))
-        .route("/{id}", get(handlers::get_ingredient))
+        .route("/", post(handlers::create_food_item))
+        .route("/search", get(handlers::search_food_items))
+        .route("/{id}", get(handlers::get_food_item))
 }
 
 pub fn recipes_router() -> Router<Arc<AppState>> {

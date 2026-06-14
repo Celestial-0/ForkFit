@@ -18,7 +18,7 @@ async def test_recipe_node_skipped():
 @pytest.mark.asyncio
 @patch("src.agents.recipe.get_chat_model")
 @patch("src.agents.recipe.calculate_recipe_cost")
-@patch("src.agents.recipe.get_recipe_with_ingredients")
+@patch("src.agents.recipe.get_recipe_with_food_items")
 async def test_recipe_node_success(mock_get_recipe, mock_calc_cost, mock_get_chat_model):
     # Mock database returns
     mock_get_recipe.side_effect = lambda pool, rid: {
@@ -27,9 +27,9 @@ async def test_recipe_node_success(mock_get_recipe, mock_calc_cost, mock_get_cha
         "cuisine": "Indian",
         "servings": 2.0,
         "instructions": "Step 1\nStep 2",
-        "ingredients": [
+        "food_items": [
             {
-                "ingredient_name": "Paneer",
+                "food_item_name": "Paneer",
                 "grams_equivalent": 100.0,
                 "calories_per_100g": 300.0,
                 "protein_per_100g": 20.0,
@@ -91,20 +91,20 @@ async def test_recipe_node_success(mock_get_recipe, mock_calc_cost, mock_get_cha
     assert selected["cost"] == 150.0
     assert selected["nutrition"]["protein_g"] == 20.0  # from Paneer (100g)
     assert selected["instructions"] == ["Step 1", "Step 2"]
-    assert len(selected["ingredients"]) == 1
-    assert selected["ingredients"][0]["name"] == "Paneer"
-    assert selected["ingredients"][0]["quantity"] == 100.0
+    assert len(selected["food_items"]) == 1
+    assert selected["food_items"][0]["name"] == "Paneer"
+    assert selected["food_items"][0]["quantity"] == 100.0
 
     assert recipe_result["alternatives"] == ["recipe-2"]
 
     mock_callback.assert_called_once()
-    mock_llm.with_structured_output.assert_called_once_with(RecipeSelectionDecision)
+    mock_llm.with_structured_output.assert_called_once_with(RecipeSelectionDecision, method="json_mode")
 
 
 @pytest.mark.asyncio
 @patch("src.agents.recipe.get_chat_model")
 @patch("src.agents.recipe.calculate_recipe_cost")
-@patch("src.agents.recipe.get_recipe_with_ingredients")
+@patch("src.agents.recipe.get_recipe_with_food_items")
 async def test_recipe_node_llm_failure_fallback(mock_get_recipe, mock_calc_cost, mock_get_chat_model):
     mock_get_recipe.side_effect = lambda pool, rid: {
         "id": rid,
@@ -112,7 +112,7 @@ async def test_recipe_node_llm_failure_fallback(mock_get_recipe, mock_calc_cost,
         "cuisine": "Indian",
         "servings": 1.0,
         "instructions": "Instructions",
-        "ingredients": []
+        "food_items": []
     }
     mock_calc_cost.return_value = 50.0
 

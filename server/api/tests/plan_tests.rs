@@ -3,7 +3,7 @@ mod common;
 use api::infra::pg::plan_repo::PgPlanRepository;
 use api::infra::pg::recipe_repo::PgRecipeRepository;
 use api::recipe::service::RecipeService;
-use api::recipe::types::{CreateIngredientRequest, CreateRecipeRequest, RecipeIngredientInput};
+use api::recipe::types::{CreateFoodItemRequest, CreateRecipeRequest, RecipeFoodItemInput};
 use api::plan::service::PlanService;
 use api::plan::types::{CreateMealPlanRequest, MealPlanItemInput};
 
@@ -17,8 +17,8 @@ async fn test_active_plan_deactivation() {
     let plan_repo = PgPlanRepository::new(db.clone());
     let plan_service = PlanService::new(plan_repo, recipe_service.clone());
 
-    // 1. Create a dummy ingredient and recipe
-    let ing_req = CreateIngredientRequest {
+    // 1. Create a dummy food item and recipe
+    let food_req = CreateFoodItemRequest {
         name: format!("Egg {}", uuid::Uuid::new_v4()),
         description: Some("Whole egg".to_string()),
         calories_per_100g: 143.0,
@@ -28,11 +28,10 @@ async fn test_active_plan_deactivation() {
         fiber_per_100g: Some(0.0),
         sodium_mg_per_100g: Some(124.0),
         micronutrients: Some(serde_json::json!({})),
-        estimated_cost_per_100g: Some(2.0),
-        price_currency: Some("INR".to_string()),
         barcode: None,
+        raw_food_cost_id: None,
     };
-    let ing = recipe_service.create_ingredient(ing_req).await.unwrap();
+    let food = recipe_service.create_food_item(food_req).await.unwrap();
 
     let recipe_req = CreateRecipeRequest {
         parent_recipe_id: None,
@@ -43,10 +42,12 @@ async fn test_active_plan_deactivation() {
         cook_time_minutes: Some(6),
         servings: 1.0,
         cuisine: Some("Universal".to_string()),
+        course: None,
         dietary_tags: vec![],
+        source_url: None,
         is_public: true,
-        ingredients: vec![RecipeIngredientInput {
-            ingredient_id: ing.id,
+        food_items: vec![RecipeFoodItemInput {
+            food_item_id: food.id,
             quantity: 100.0,
             unit: "grams".to_string(),
             grams_equivalent: 100.0,
@@ -66,7 +67,7 @@ async fn test_active_plan_deactivation() {
                 planned_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 11).unwrap(),
                 meal_type: "lunch".to_string(),
                 recipe_id: Some(recipe.recipe.id),
-                ingredient_id: None,
+                food_item_id: None,
                 custom_food_name: None,
                 servings: 1.0,
             },
@@ -74,7 +75,7 @@ async fn test_active_plan_deactivation() {
                 planned_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 10).unwrap(),
                 meal_type: "breakfast".to_string(),
                 recipe_id: Some(recipe.recipe.id),
-                ingredient_id: None,
+                food_item_id: None,
                 custom_food_name: None,
                 servings: 1.0,
             },
@@ -104,7 +105,7 @@ async fn test_active_plan_deactivation() {
             planned_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
             meal_type: "dinner".to_string(),
             recipe_id: Some(recipe.recipe.id),
-            ingredient_id: None,
+            food_item_id: None,
             custom_food_name: None,
             servings: 2.0,
         }],

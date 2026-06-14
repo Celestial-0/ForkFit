@@ -31,7 +31,7 @@ from src.db.repositories.vector_repo import (
     search_recipes_by_embedding,
 )
 from src.generated import intelligence_pb2, intelligence_pb2_grpc
-from src.models.context import UserContextPackage
+from src.models.context import UserContextPackage, MacroTargets
 from src.reflection.engine import run_reflection
 from src.services.embedding import embed_text
 
@@ -320,38 +320,97 @@ class IntelligenceServiceServicer(
 
         # Semantic search: recipes + memories
         candidate_recipes, relevant_memories = await asyncio.gather(
-            search_recipes_by_embedding(self.pool, prompt_embedding),
+            search_recipes_by_embedding(self.pool, prompt_embedding, limit=35),
             search_memories_by_embedding(
                 self.pool, user_id, prompt_embedding
             ),
         )
 
         # Merge proto-supplied fields with DB data
-        allergies = list(proto_ctx.allergies) or safety_profile.get(
-            "allergies", []
-        )
-        medical_conditions = list(
-            proto_ctx.medical_conditions
-        ) or safety_profile.get("conditions", [])
+        safe_safety = safety_profile or {}
+        allergies_raw = safe_safety.get("allergies", [])
+        if isinstance(allergies_raw, str):
+            try:
+                allergies_raw = json.loads(allergies_raw)
+            except Exception:
+                allergies_raw = []
+        allergies = list(proto_ctx.allergies) or (allergies_raw if isinstance(allergies_raw, list) else [])
+
+        conditions_raw = safe_safety.get("conditions", [])
+        if isinstance(conditions_raw, str):
+            try:
+                conditions_raw = json.loads(conditions_raw)
+            except Exception:
+                conditions_raw = []
+        medical_conditions = list(proto_ctx.medical_conditions) or (conditions_raw if isinstance(conditions_raw, list) else [])
+
+        # Parse biometrics
+        weight_kg = biometrics.get("weight_kg") if biometrics else None
+        height_cm = biometrics.get("height_cm") if biometrics else None
+
+        # Parse profile and calculate age
+        gender = None
+        age = None
+        if profile:
+            gender = profile.get("gender")
+            dob = profile.get("dob")
+            if dob:
+                from datetime import date
+                if isinstance(dob, str):
+                    try:
+                        from datetime import datetime
+                        dob = datetime.strptime(dob, "%Y-%m-%d").date()
+                    except Exception:
+                        pass
+                if isinstance(dob, date):
+                    today = date.today()
+                    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
+        # Parse preferences and extract activity level
+        user_pref_dict = {}
+        activity_level = "moderate"
+        if preferences:
+            user_pref = preferences.get("preferences") or {}
+            if isinstance(user_pref, str):
+                try:
+                    user_pref_dict = json.loads(user_pref)
+                except Exception:
+                    user_pref_dict = {}
+            elif isinstance(user_pref, dict):
+                user_pref_dict = user_pref
+            
+            if "activity_level" in user_pref_dict:
+                activity_level = user_pref_dict["activity_level"]
+
+        # Determine macro targets if daily_calorie_target exists
+        macro_targets = None
+        if proto_ctx.daily_calorie_target > 0.0:
+            macro_targets = MacroTargets(
+                calories=proto_ctx.daily_calorie_target,
+                protein_g=proto_ctx.target_protein_g or 150.0,
+                carbs_g=proto_ctx.target_carbs_g or 200.0,
+                fat_g=proto_ctx.target_fat_g or 70.0,
+            )
 
         return UserContextPackage(
             user_id=user_id,
             allergies=allergies,
             medical_conditions=medical_conditions,
-            goals=goals,
-            biometrics=biometrics,
-            profile=profile,
+            active_goals=goals,
+            weight_kg=weight_kg,
+            height_cm=height_cm,
+            age=age,
+            gender=gender,
+            activity_level=activity_level,
             recent_workouts=workouts,
-            preferences=preferences,
+            preferences=user_pref_dict,
             active_memories=active_memories,
             candidate_recipes=candidate_recipes,
             relevant_memories=relevant_memories,
-            daily_calorie_target=proto_ctx.daily_calorie_target or None,
-            target_protein_g=proto_ctx.target_protein_g or None,
-            target_carbs_g=proto_ctx.target_carbs_g or None,
-            target_fat_g=proto_ctx.target_fat_g or None,
-            budget_limit=proto_ctx.budget_limit or None,
-            preferred_cuisine=proto_ctx.preferred_cuisine or None,
+            calorie_target=proto_ctx.daily_calorie_target or 2000.0,
+            macro_targets=macro_targets,
+            budget_limit=proto_ctx.budget_limit or 0.0,
+            preferred_cuisine=proto_ctx.preferred_cuisine or "Standard",
             preferred_foods=list(proto_ctx.preferred_foods),
             avoided_foods=list(proto_ctx.avoided_foods),
         )

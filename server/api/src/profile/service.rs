@@ -141,7 +141,7 @@ impl<R: ProfileRepository> ProfileService<R> {
         let metric_type_lower = req.metric_type.to_lowercase();
         
         // Validation: weight bounds
-        if metric_type_lower == "weight" {
+        if metric_type_lower == "weight" || metric_type_lower == "weight_kg" {
             if req.value < 10.0 || req.value > 500.0 {
                 return Err(ProfileError::InvalidBiometric(
                     "Weight must be between 10kg and 500kg".to_string()
@@ -150,7 +150,7 @@ impl<R: ProfileRepository> ProfileService<R> {
         }
 
         // Validation: height bounds
-        if metric_type_lower == "height" {
+        if metric_type_lower == "height" || metric_type_lower == "height_cm" {
             if req.value < 50.0 || req.value > 300.0 {
                 return Err(ProfileError::InvalidBiometric(
                     "Height must be between 50cm and 300cm".to_string()
@@ -335,9 +335,27 @@ mod tests {
         }).await;
         assert!(res.is_ok());
 
+        // Valid weight_kg
+        let res = service.log_biometric(user_id, CreateBiometricRequest {
+            metric_type: "weight_kg".to_string(),
+            value: 70.0,
+            notes: None,
+            logged_at: None,
+        }).await;
+        assert!(res.is_ok());
+
         // Invalid weight (too low)
         let res = service.log_biometric(user_id, CreateBiometricRequest {
             metric_type: "Weight".to_string(),
+            value: 5.0,
+            notes: None,
+            logged_at: None,
+        }).await;
+        assert!(res.is_err());
+
+        // Invalid weight_kg (too low)
+        let res = service.log_biometric(user_id, CreateBiometricRequest {
+            metric_type: "weight_kg".to_string(),
             value: 5.0,
             notes: None,
             logged_at: None,
@@ -369,9 +387,27 @@ mod tests {
         }).await;
         assert!(res.is_ok());
 
+        // Valid height_cm
+        let res = service.log_biometric(user_id, CreateBiometricRequest {
+            metric_type: "height_cm".to_string(),
+            value: 175.0,
+            notes: None,
+            logged_at: None,
+        }).await;
+        assert!(res.is_ok());
+
         // Invalid height (too low)
         let res = service.log_biometric(user_id, CreateBiometricRequest {
             metric_type: "Height".to_string(),
+            value: 45.0,
+            notes: None,
+            logged_at: None,
+        }).await;
+        assert!(res.is_err());
+
+        // Invalid height_cm (too low)
+        let res = service.log_biometric(user_id, CreateBiometricRequest {
+            metric_type: "height_cm".to_string(),
             value: 45.0,
             notes: None,
             logged_at: None,

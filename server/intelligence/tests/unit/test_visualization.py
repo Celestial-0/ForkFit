@@ -22,7 +22,7 @@ async def test_visualization_node_success():
                 }
             ],
             "shopping_list": [
-                {"ingredient_name": "Egg", "quantity": 2.0, "unit": "pcs", "category": "produce", "estimated_cost": 20.0}
+                {"food_item_name": "Egg", "quantity": 2.0, "unit": "pcs", "category": "produce", "estimated_cost": 20.0}
             ],
             "nutrition_summary": {
                 "calories": 400.0,
@@ -40,7 +40,15 @@ async def test_visualization_node_success():
 
     # 1. Assert ui_elements structure and count
     ui_elements = result["ui_elements"]
-    assert len(ui_elements) == 3
+    assert len(ui_elements) == 5
+
+    # Check meal_plan
+    meal_plan = next(e for e in ui_elements if e["type"] == "meal_plan")
+    assert meal_plan["title"] == "Diet Meal Plan"
+    
+    # Check shopping list
+    shopping_list = next(e for e in ui_elements if e["type"] == "shopping_list")
+    assert shopping_list["title"] == "Grocery Shopping List"
 
     # Check chart type and values
     macro_chart = next(e for e in ui_elements if e["title"] == "Daily Macronutrient Split (Average)")

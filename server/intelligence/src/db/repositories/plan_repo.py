@@ -19,14 +19,14 @@ async def get_pantry_items(
     pool: asyncpg.Pool,
     user_id: str,
 ) -> list[dict[str, Any]]:
-    """Return all pantry items for a user, with ingredient names joined."""
+    """Return all pantry items for a user, with food item names joined."""
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             """
             SELECT pi.*,
-                   i.name AS ingredient_name
+                   i.name AS food_item_name
               FROM pantry_items pi
-              JOIN ingredients i ON pi.ingredient_id = i.id
+              JOIN food_items i ON pi.food_item_id = i.id
              WHERE pi.user_id = $1
             """,
             user_id,
@@ -102,7 +102,7 @@ async def create_shopping_list(
     """Insert a shopping list header and its items in a single transaction.
 
     Each dict in *items* must contain at minimum:
-    ``ingredient_id``, ``quantity``, ``unit``.
+    ``food_item_id``, ``quantity``, ``unit``.
 
     Returns:
         The UUID of the newly created shopping list (as a string).
@@ -124,13 +124,13 @@ async def create_shopping_list(
                 await conn.executemany(
                     """
                     INSERT INTO shopping_list_items
-                        (shopping_list_id, ingredient_id, quantity, unit)
+                        (shopping_list_id, food_item_id, quantity, unit)
                     VALUES ($1, $2, $3, $4)
                     """,
                     [
                         (
                             list_id,
-                            item["ingredient_id"],
+                            item["food_item_id"],
                             item["quantity"],
                             item.get("unit", "g"),
                         )

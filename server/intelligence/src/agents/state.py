@@ -70,8 +70,8 @@ class CultureResult(TypedDict):
 
 
 # ── Recipe Types ─────────────────────────────────────────────
-class RecipeIngredient(TypedDict):
-    """Ingredient info within SelectedRecipe."""
+class RecipeFoodItem(TypedDict):
+    """Food item info within SelectedRecipe."""
     name: str
     quantity: float
     unit: str
@@ -86,7 +86,7 @@ class SelectedRecipe(TypedDict):
     nutrition: dict[str, float]
     cost: float
     instructions: list[str]
-    ingredients: list[RecipeIngredient]
+    food_items: list[RecipeFoodItem]
 
 
 class RecipeResult(TypedDict):
@@ -121,7 +121,7 @@ class CalendarResult(TypedDict):
 # ── Shopping Types ───────────────────────────────────────────
 class ShoppingItem(TypedDict):
     """An aggregated shopping list item with deductions applied."""
-    ingredient_name: str
+    food_item_name: str
     quantity: float
     unit: str
     category: str

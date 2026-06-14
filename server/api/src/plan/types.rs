@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc, NaiveDate};
 use serde::{Deserialize, Serialize};
 
-use crate::common::id::{UserId, MealPlanId, MealPlanItemId, PantryItemId, ShoppingListId, ShoppingListItemId, RecipeId, IngredientId};
+use crate::common::id::{UserId, MealPlanId, MealPlanItemId, PantryItemId, ShoppingListId, ShoppingListItemId, RecipeId, FoodItemId};
 use super::models::{MealPlan, MealPlanItem, PantryItem, ShoppingList, ShoppingListItem};
 
 // Meal Plans
@@ -10,7 +10,7 @@ pub struct MealPlanItemInput {
     pub planned_date: NaiveDate,
     pub meal_type: String, // 'breakfast', 'lunch', 'dinner', 'snack'
     pub recipe_id: Option<RecipeId>,
-    pub ingredient_id: Option<IngredientId>,
+    pub food_item_id: Option<FoodItemId>,
     pub custom_food_name: Option<String>,
     pub servings: f64,
 }
@@ -58,7 +58,7 @@ pub struct MealPlanItemResponse {
     pub planned_date: NaiveDate,
     pub meal_type: String,
     pub recipe_id: Option<RecipeId>,
-    pub ingredient_id: Option<IngredientId>,
+    pub food_item_id: Option<FoodItemId>,
     pub custom_food_name: Option<String>,
     pub servings: f64,
     pub consumed: bool,
@@ -73,7 +73,7 @@ impl From<MealPlanItem> for MealPlanItemResponse {
             planned_date: item.planned_date,
             meal_type: item.meal_type,
             recipe_id: item.recipe_id,
-            ingredient_id: item.ingredient_id,
+            food_item_id: item.food_item_id,
             custom_food_name: item.custom_food_name,
             servings: item.servings,
             consumed: item.consumed,
@@ -101,7 +101,7 @@ pub struct UpdateMealPlanItemConsumedRequest {
 // Pantry
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreatePantryItemRequest {
-    pub ingredient_id: IngredientId,
+    pub food_item_id: FoodItemId,
     pub quantity: f64,
     pub unit: String,
     pub expires_at: Option<NaiveDate>,
@@ -118,7 +118,7 @@ pub struct UpdatePantryItemRequest {
 pub struct PantryItemResponse {
     pub id: PantryItemId,
     pub user_id: UserId,
-    pub ingredient_id: IngredientId,
+    pub food_item_id: FoodItemId,
     pub quantity: f64,
     pub unit: String,
     pub expires_at: Option<NaiveDate>,
@@ -132,7 +132,7 @@ impl From<PantryItem> for PantryItemResponse {
         Self {
             id: item.id,
             user_id: item.user_id,
-            ingredient_id: item.ingredient_id,
+            food_item_id: item.food_item_id,
             quantity: item.quantity,
             unit: item.unit,
             expires_at: item.expires_at,
@@ -146,7 +146,7 @@ impl From<PantryItem> for PantryItemResponse {
 // Shopping Lists
 #[derive(Debug, Clone, Deserialize)]
 pub struct ShoppingListItemInput {
-    pub ingredient_id: Option<IngredientId>,
+    pub food_item_id: Option<FoodItemId>,
     pub custom_item_name: Option<String>,
     pub quantity: f64,
     pub unit: String,
@@ -186,7 +186,7 @@ impl From<ShoppingList> for ShoppingListResponse {
 pub struct ShoppingListItemResponse {
     pub id: ShoppingListItemId,
     pub shopping_list_id: ShoppingListId,
-    pub ingredient_id: Option<IngredientId>,
+    pub food_item_id: Option<FoodItemId>,
     pub custom_item_name: Option<String>,
     pub quantity: f64,
     pub unit: String,
@@ -201,7 +201,7 @@ impl From<ShoppingListItem> for ShoppingListItemResponse {
         Self {
             id: item.id,
             shopping_list_id: item.shopping_list_id,
-            ingredient_id: item.ingredient_id,
+            food_item_id: item.food_item_id,
             custom_item_name: item.custom_item_name,
             quantity: item.quantity,
             unit: item.unit,

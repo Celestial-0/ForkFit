@@ -23,12 +23,12 @@ async def test_shopping_node_success():
         "context": {
             "pantry_items": [
                 {
-                    "ingredient_name": "rice",
+                    "food_item_name": "rice",
                     "quantity": 200.0,
                     "unit": "g"
                 },
                 {
-                    "ingredient_name": "salt",
+                    "food_item_name": "salt",
                     "quantity": 500.0,
                     "unit": "g"
                 }
@@ -39,7 +39,7 @@ async def test_shopping_node_success():
                 {
                     "recipe_id": "recipe-1",
                     "title": "Fried Rice",
-                    "ingredients": [
+                    "food_items": [
                         {"name": "Rice", "quantity": 150.0, "unit": "g"},
                         {"name": "Egg", "quantity": 2.0, "unit": "pcs"}
                     ]
@@ -47,7 +47,7 @@ async def test_shopping_node_success():
                 {
                     "recipe_id": "recipe-2",
                     "title": "Boiled Egg",
-                    "ingredients": [
+                    "food_items": [
                         {"name": "Egg", "quantity": 1.0, "unit": "pcs"}
                     ]
                 }
@@ -72,7 +72,7 @@ async def test_shopping_node_success():
     result = await shopping_node(state)
     shopping_result = result["shopping_result"]
 
-    # Ingredients needed:
+    # Food items needed:
     # - Rice: 150g * 1.0 = 150g. Pantry has 200g.
     #   After subtraction: remaining Rice needed = 0g.
     #   Pantry savings: 150g * 0.1 = 15.0
@@ -87,7 +87,7 @@ async def test_shopping_node_success():
     # Shopping items should only include Eggs since Rice was fully covered by the pantry
     assert len(shopping_result["items"]) == 1
     egg_item = shopping_result["items"][0]
-    assert egg_item["ingredient_name"] == "Egg"
+    assert egg_item["food_item_name"] == "Egg"
     assert egg_item["quantity"] == 4.0
     assert egg_item["unit"] == "pcs"
     # Cost = quantity (4.0) * 0.15 = 0.6

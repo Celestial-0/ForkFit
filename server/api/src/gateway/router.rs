@@ -10,7 +10,7 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/health", get(|| async { "ok" }))
         .nest("/api/v1", auth::router())
         .nest("/api/v1/profile", crate::profile::router())
-        .nest("/api/v1/ingredients", crate::recipe::ingredients_router())
+        .nest("/api/v1/food-items", crate::recipe::food_items_router())
         .nest("/api/v1/recipes", crate::recipe::recipes_router())
         .nest("/api/v1/food-logs", crate::recipe::food_logs_router())
         .nest("/api/v1/meal-plans", crate::plan::meal_plans_router())

@@ -43,7 +43,7 @@ async def planner_node(state: GraphState) -> dict[str, Any]:
 
     with timer:
         llm = get_chat_model(settings)
-        structured_llm = llm.with_structured_output(PlannerDecision)
+        structured_llm = llm.with_structured_output(PlannerDecision, method="json_mode")
 
         system_prompt = (
             "You are the Cognitive Planner for ForkFit. Your role is to analyze the user's prompt "
@@ -54,9 +54,12 @@ async def planner_node(state: GraphState) -> dict[str, Any]:
             "- 'budget': Evaluates cost and suggests cheap alternatives. (Include if user has a non-zero budget limit in context or specifies budget limits).\n"
             "- 'culture': Filters recipes by cuisine and religious/cultural tags. (Include if preferred cuisine or diet preferences exist).\n"
             "- 'recipe': Handles final recipe selection and semantic retrieval. (Always include for meal/recipe queries).\n"
-            "- 'calendar': Schedules meals and adjusts pre/post workout slots. (Include if workout data exists or timeline is weekly/daily meal plan).\n"
-            "- 'shopping': Aggregates groceries and subtracts pantry stock. (Include if a meal plan is generated and shopping lists are needed).\n"
-            "You MUST return a list of required agent names and a detailed execution plan text."
+            "- 'calendar': Schedules meals and adjusts pre/post workout slots. (Always include for meal, recipe, or meal plan queries).\n"
+            "- 'shopping': Aggregates groceries and subtracts pantry stock. (Always include for meal, recipe, or meal plan queries).\n\n"
+            "You MUST respond with a JSON object containing the following keys:\n"
+            "- \"required_agents\": A list of strings representing the chosen agent names (from the available agents above).\n"
+            "- \"execution_plan\": A detailed string explaining the reasoning for the chosen agents and the workflow steps.\n\n"
+            "Do NOT wrap the JSON response in markdown code blocks or any other formatting."
         )
 
         try:

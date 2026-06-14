@@ -8,7 +8,7 @@ from typing import Any
 import structlog
 from src.agents.helpers import Timer, emit_step
 from src.agents.state import GraphState, NutritionResult, RecipeNutritionScore
-from src.db.repositories.recipe_repo import get_recipe_with_ingredients
+from src.db.repositories.recipe_repo import get_recipe_with_food_items
 from src.services.nutrition_math import (
     calculate_bmr,
     calculate_macro_split,
@@ -80,12 +80,12 @@ async def nutrition_node(state: GraphState) -> dict[str, NutritionResult]:
                 continue
 
             recipe_id_str = str(recipe_id)
-            full_recipe = await get_recipe_with_ingredients(pool, recipe_id_str)
+            full_recipe = await get_recipe_with_food_items(pool, recipe_id_str)
             if not full_recipe:
                 continue
 
             # Calculate nutrition breakdown of recipe
-            breakdown = calculate_recipe_nutrition(full_recipe.get("ingredients", []))
+            breakdown = calculate_recipe_nutrition(full_recipe.get("food_items", []))
             
             # Score adherence (scale recipe to meet calories roughly or score relative macro balance)
             score = score_plan_adherence(breakdown, daily_targets)

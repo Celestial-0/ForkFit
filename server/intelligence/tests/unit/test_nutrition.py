@@ -18,13 +18,13 @@ async def test_nutrition_node_skipped():
 
 
 @pytest.mark.asyncio
-@patch("src.agents.nutrition.get_recipe_with_ingredients")
+@patch("src.agents.nutrition.get_recipe_with_food_items")
 async def test_nutrition_node_with_macro_targets(mock_get_recipe):
     # Mock database return for a recipe
     mock_get_recipe.return_value = {
         "id": "recipe-1",
         "title": "Protein Shake",
-        "ingredients": [
+        "food_items": [
             {
                 "grams_equivalent": 100.0,
                 "calories_per_100g": 300.0,
@@ -77,13 +77,13 @@ async def test_nutrition_node_with_macro_targets(mock_get_recipe):
 
 
 @pytest.mark.asyncio
-@patch("src.agents.nutrition.get_recipe_with_ingredients")
+@patch("src.agents.nutrition.get_recipe_with_food_items")
 async def test_nutrition_node_calculated_macros(mock_get_recipe):
     # Mock database return for a recipe
     mock_get_recipe.return_value = {
         "id": "recipe-1",
         "title": "Salad",
-        "ingredients": [
+        "food_items": [
             {
                 "grams_equivalent": 200.0,
                 "calories_per_100g": 50.0,

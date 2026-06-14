@@ -116,6 +116,65 @@ async def visualization_node(state: GraphState) -> dict[str, Any]:
             })
         })
 
+        # Create Meal Plan Element (type: "meal_plan")
+        meal_plan_items = []
+        start_date = None
+        end_date = None
+        
+        for plan in daily_plans:
+            date_str = plan.get("date", "")
+            if date_str:
+                if not start_date or date_str < start_date:
+                    start_date = date_str
+                if not end_date or date_str > end_date:
+                    end_date = date_str
+                
+            for meal in plan.get("meals", []):
+                meal_plan_items.append({
+                    "planned_date": date_str,
+                    "meal_type": meal.get("meal_type", "dinner").lower(),
+                    "recipe_id": meal.get("recipe_id"),
+                    "food_item_id": None,
+                    "custom_food_name": meal.get("recipe_title"),
+                    "servings": float(meal.get("servings", 1.0))
+                })
+        
+        if daily_plans:
+            ui_elements.append({
+                "type": "meal_plan",
+                "title": "Diet Meal Plan",
+                "config_json": json.dumps({}),
+                "data_json": json.dumps({
+                    "name": "Weekly Meal Plan",
+                    "start_date": start_date or "",
+                    "end_date": end_date or "",
+                    "is_active": True,
+                    "items": meal_plan_items
+                })
+            })
+
+        # Create Shopping List Element (type: "shopping_list")
+        shopping_items_req = []
+        for item in shopping_list:
+            shopping_items_req.append({
+                "food_item_id": None,
+                "custom_item_name": item.get("food_item_name"),
+                "quantity": float(item.get("quantity", 0.0)),
+                "unit": item.get("unit", "g"),
+                "category": item.get("category", "Other")
+            })
+            
+        if shopping_list:
+            ui_elements.append({
+                "type": "shopping_list",
+                "title": "Grocery Shopping List",
+                "config_json": json.dumps({}),
+                "data_json": json.dumps({
+                    "name": "Weekly Grocery List",
+                    "items": shopping_items_req
+                })
+            })
+
         # 4. Generate fallback programmatic markdown text summary
         p = nutrition_summary.get("protein_g", 0.0)
         c = nutrition_summary.get("carbs_g", 0.0)
@@ -150,7 +209,7 @@ async def visualization_node(state: GraphState) -> dict[str, Any]:
             markdown_lines.append("## Shopping List")
             for item in shopping_list:
                 markdown_lines.append(
-                    f"- {item.get('ingredient_name')}: {item.get('quantity')} {item.get('unit')} "
+                    f"- {item.get('food_item_name')}: {item.get('quantity')} {item.get('unit')} "
                     f"({item.get('category')}) — Est. Cost: ₹{item.get('estimated_cost')}"
                 )
             markdown_lines.append(f"**Total Estimated Plan Cost**: ₹{total_cost:.2f}")
@@ -165,11 +224,11 @@ async def visualization_node(state: GraphState) -> dict[str, Any]:
             daily_plans_summary_list = []
             for plan in daily_plans:
                 meals_str = ", ".join(f"{m.get('meal_type', '').capitalize()}: {m.get('recipe_title')}" for m in plan.get("meals", []))
-                daily_plans_summary_list.append(f"- {plan.get('date')}: {meals_str}")
+                daily_plans_summary_str = "\n".join(daily_plans_summary_list)
             daily_plans_summary_str = "\n".join(daily_plans_summary_list)
 
             shopping_list_summary_str = ", ".join(
-                f"{item.get('ingredient_name')} ({item.get('quantity')} {item.get('unit')})"
+                f"{item.get('food_item_name')} ({item.get('quantity')} {item.get('unit')})"
                 for item in shopping_list
             )
 

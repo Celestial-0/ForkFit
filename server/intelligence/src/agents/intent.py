@@ -21,15 +21,21 @@ async def classify_intent(
     logger.info("classify_intent_started", user_id=user_id, prompt=prompt[:80])
 
     llm = get_chat_model(settings)
-    structured_llm = llm.with_structured_output(IntentBlueprint)
+    structured_llm = llm.with_structured_output(IntentBlueprint, method="json_mode")
 
     system_prompt = (
         "You are a nutritional assistant for ForkFit. Your job is to extract structured intent "
-        "from the user's natural language prompt.\n"
-        "Extract the goal (e.g. weight_loss, muscle_gain, fat_loss, maintenance, calorie_surplus), "
-        "diet (e.g. vegetarian, vegan, omnivore, keto, pescatarian, jain), budget limit, budget currency, "
-        "timeline (daily or weekly), and any constraints (e.g. 'no eggs', 'high protein').\n"
-        "Provide a detailed raw_analysis dict containing your reasoning."
+        "from the user's natural language prompt. You MUST respond with a JSON object matching this schema:\n"
+        "{\n"
+        "  \"goal\": \"weight_loss | muscle_gain | fat_loss | maintenance | calorie_surplus\",\n"
+        "  \"diet\": \"vegetarian | vegan | omnivore | keto | pescatarian | jain\",\n"
+        "  \"budget_limit\": 0.0,\n"
+        "  \"budget_currency\": \"INR\",\n"
+        "  \"timeline\": \"daily | weekly\",\n"
+        "  \"constraints\": [\"no eggs\", \"high protein\"],\n"
+        "  \"raw_analysis\": {\"reasoning\": \"detailed reasoning text\"}\n"
+        "}\n"
+        "Do NOT wrap the JSON response in markdown code blocks or any other formatting."
     )
 
     try:

@@ -44,7 +44,7 @@ async def test_consensus_node_success():
             ]
         },
         "shopping_result": {
-            "items": [{"ingredient_name": "Egg", "quantity": 2.0, "unit": "pcs", "category": "produce", "estimated_cost": 20.0}],
+            "items": [{"food_item_name": "Egg", "quantity": 2.0, "unit": "pcs", "category": "produce", "estimated_cost": 20.0}],
             "total_cost": 50.0,
             "pantry_savings": 0.0
         },

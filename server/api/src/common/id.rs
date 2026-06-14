@@ -79,7 +79,7 @@ macro_rules! define_id {
 
 define_id!(UserId);
 define_id!(RecipeId);
-define_id!(IngredientId);
+define_id!(FoodItemId);
 define_id!(MealPlanId);
 define_id!(ChatThreadId);
 define_id!(ChatMessageId);
@@ -98,7 +98,8 @@ define_id!(ShoppingListItemId);
 define_id!(BackgroundJobId);
 define_id!(NotificationLogId);
 define_id!(AuditLogId);
-define_id!(IngredientPortionId);
+define_id!(FoodItemPortionId);
+define_id!(RawFoodCostId);
 
 #[cfg(test)]
 mod tests {

@@ -1,6 +1,6 @@
 """Repository for pgvector cosine-similarity searches.
 
-Covers recipe_embeddings, ingredient_embeddings, and
+Covers recipe_embeddings, food_item_embeddings, and
 agent_memory_embeddings tables.
 """
 
@@ -48,23 +48,22 @@ async def search_recipes_by_embedding(
     return [dict(r) for r in rows]
 
 
-async def search_ingredients_by_embedding(
+async def search_food_items_by_embedding(
     pool: asyncpg.Pool,
     embedding: list[float],
     limit: int = 10,
 ) -> list[dict[str, Any]]:
-    """Find ingredients closest to *embedding* using cosine distance."""
+    """Find food items closest to *embedding* using cosine distance."""
     embedding_str = _format_embedding(embedding)
 
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             """
-            SELECT ie.ingredient_id,
+            SELECT ie.food_item_id,
                    i.name,
-                   i.category,
                    (ie.embedding <=> $1::vector) AS distance
-              FROM ingredient_embeddings ie
-              JOIN ingredients i ON ie.ingredient_id = i.id
+              FROM food_item_embeddings ie
+              JOIN food_items i ON ie.food_item_id = i.id
              ORDER BY distance
              LIMIT $2
             """,

@@ -39,8 +39,8 @@ impl<R: PlanRepository, RR: RecipeRepository> PlanService<R, RR> {
             if item_input.servings < 0.10 {
                 return Err(PlanError::ValidationError("servings must be at least 0.1".to_string()).into());
             }
-            if item_input.recipe_id.is_none() && item_input.ingredient_id.is_none() && item_input.custom_food_name.is_none() {
-                return Err(PlanError::ValidationError("meal plan item must specify recipe_id, ingredient_id, or custom_food_name".to_string()).into());
+            if item_input.recipe_id.is_none() && item_input.food_item_id.is_none() && item_input.custom_food_name.is_none() {
+                return Err(PlanError::ValidationError("meal plan item must specify recipe_id, food_item_id, or custom_food_name".to_string()).into());
             }
 
             let meal_type_lower = item_input.meal_type.to_lowercase();
@@ -54,10 +54,10 @@ impl<R: PlanRepository, RR: RecipeRepository> PlanService<R, RR> {
                     return Err(PlanError::ValidationError(format!("recipe {} not found", recipe_id)).into());
                 }
             }
-            // Verify if ingredient exists
-            if let Some(ingredient_id) = item_input.ingredient_id {
-                if self.recipe_service.get_ingredient(ingredient_id).await.is_err() {
-                    return Err(PlanError::ValidationError(format!("ingredient {} not found", ingredient_id)).into());
+            // Verify if food item exists
+            if let Some(food_item_id) = item_input.food_item_id {
+                if self.recipe_service.get_food_item(food_item_id).await.is_err() {
+                    return Err(PlanError::ValidationError(format!("food item {} not found", food_item_id)).into());
                 }
             }
 
@@ -67,7 +67,7 @@ impl<R: PlanRepository, RR: RecipeRepository> PlanService<R, RR> {
                 planned_date: item_input.planned_date,
                 meal_type: meal_type_lower,
                 recipe_id: item_input.recipe_id,
-                ingredient_id: item_input.ingredient_id,
+                food_item_id: item_input.food_item_id,
                 custom_food_name: item_input.custom_food_name,
                 servings: item_input.servings,
                 consumed: false,
@@ -142,26 +142,26 @@ impl<R: PlanRepository, RR: RecipeRepository> PlanService<R, RR> {
                 logged_at: Some(Utc::now()),
                 meal_type: item.meal_type.clone(),
                 recipe_id: item.recipe_id,
-                ingredient_id: item.ingredient_id,
+                food_item_id: item.food_item_id,
                 custom_food_name: item.custom_food_name.clone(),
                 quantity: if item.recipe_id.is_some() {
                     item.servings
-                } else if item.ingredient_id.is_some() {
-                    item.servings * 100.0 // 1 serving = 100g for ingredients
+                } else if item.food_item_id.is_some() {
+                    item.servings * 100.0 // 1 serving = 100g for food items
                 } else {
                     item.servings
                 },
                 unit: if item.recipe_id.is_some() {
                     "servings".to_string()
-                } else if item.ingredient_id.is_some() {
+                } else if item.food_item_id.is_some() {
                     "grams".to_string()
                 } else {
                     "servings".to_string()
                 },
-                calories: if item.recipe_id.is_none() && item.ingredient_id.is_none() { Some(0.0) } else { None },
-                protein: if item.recipe_id.is_none() && item.ingredient_id.is_none() { Some(0.0) } else { None },
-                carbs: if item.recipe_id.is_none() && item.ingredient_id.is_none() { Some(0.0) } else { None },
-                fats: if item.recipe_id.is_none() && item.ingredient_id.is_none() { Some(0.0) } else { None },
+                calories: if item.recipe_id.is_none() && item.food_item_id.is_none() { Some(0.0) } else { None },
+                protein: if item.recipe_id.is_none() && item.food_item_id.is_none() { Some(0.0) } else { None },
+                carbs: if item.recipe_id.is_none() && item.food_item_id.is_none() { Some(0.0) } else { None },
+                fats: if item.recipe_id.is_none() && item.food_item_id.is_none() { Some(0.0) } else { None },
             };
 
             self.recipe_service.log_food(user_id, log_req).await?;
@@ -196,15 +196,15 @@ impl<R: PlanRepository, RR: RecipeRepository> PlanService<R, RR> {
             return Err(PlanError::ValidationError("unit cannot be empty".to_string()).into());
         }
 
-        // Verify ingredient exists
-        if self.recipe_service.get_ingredient(req.ingredient_id).await.is_err() {
-            return Err(PlanError::ValidationError(format!("ingredient {} not found", req.ingredient_id)).into());
+        // Verify food item exists
+        if self.recipe_service.get_food_item(req.food_item_id).await.is_err() {
+            return Err(PlanError::ValidationError(format!("food item {} not found", req.food_item_id)).into());
         }
 
         let item = PantryItem {
             id: PantryItemId::new(),
             user_id,
-            ingredient_id: req.ingredient_id,
+            food_item_id: req.food_item_id,
             quantity: req.quantity,
             unit: req.unit.trim().to_string(),
             expires_at: req.expires_at,
@@ -260,20 +260,20 @@ impl<R: PlanRepository, RR: RecipeRepository> PlanService<R, RR> {
             if item_input.unit.trim().is_empty() {
                 return Err(PlanError::ValidationError("unit cannot be empty".to_string()).into());
             }
-            if item_input.ingredient_id.is_none() && item_input.custom_item_name.is_none() {
-                return Err(PlanError::ValidationError("shopping list item must specify ingredient_id or custom_item_name".to_string()).into());
+            if item_input.food_item_id.is_none() && item_input.custom_item_name.is_none() {
+                return Err(PlanError::ValidationError("shopping list item must specify food_item_id or custom_item_name".to_string()).into());
             }
 
-            if let Some(ing_id) = item_input.ingredient_id {
-                if self.recipe_service.get_ingredient(ing_id).await.is_err() {
-                    return Err(PlanError::ValidationError(format!("ingredient {} not found", ing_id)).into());
+            if let Some(food_item_id) = item_input.food_item_id {
+                if self.recipe_service.get_food_item(food_item_id).await.is_err() {
+                    return Err(PlanError::ValidationError(format!("food item {} not found", food_item_id)).into());
                 }
             }
 
             items.push(ShoppingListItem {
                 id: ShoppingListItemId::new(),
                 shopping_list_id: list_id,
-                ingredient_id: item_input.ingredient_id,
+                food_item_id: item_input.food_item_id,
                 custom_item_name: item_input.custom_item_name,
                 quantity: item_input.quantity,
                 unit: item_input.unit.trim().to_string(),
@@ -340,9 +340,9 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
     use chrono::NaiveDate;
-    use crate::common::id::{UserId, MealPlanId, MealPlanItemId, PantryItemId, ShoppingListId, ShoppingListItemId, RecipeId, IngredientId};
+    use crate::common::id::{UserId, MealPlanId, MealPlanItemId, PantryItemId, ShoppingListId, ShoppingListItemId, RecipeId, FoodItemId, RawFoodCostId};
     use crate::plan::types::MealPlanItemInput;
-    use crate::recipe::models::{Ingredient, Recipe, RecipeIngredient, RecipeWithIngredients, FoodLog, IngredientPortion};
+    use crate::recipe::models::{FoodItem, Recipe, RecipeFoodItem, RecipeWithFoodItems, FoodLog, FoodItemPortion, RawFoodCost};
     use crate::recipe::repository::RecipeRepository;
     use uuid::Uuid;
 
@@ -476,26 +476,26 @@ mod tests {
 
     #[derive(Default)]
     struct MockRecipeRepository {
-        ingredients: Mutex<Vec<Ingredient>>,
+        food_items: Mutex<Vec<FoodItem>>,
         logged: Mutex<Vec<FoodLog>>,
     }
 
     impl RecipeRepository for MockRecipeRepository {
-        async fn create_ingredient(&self, ing: Ingredient) -> AppResult<Ingredient> {
-            self.ingredients.lock().unwrap().push(ing.clone());
-            Ok(ing)
+        async fn create_food_item(&self, food: FoodItem) -> AppResult<FoodItem> {
+            self.food_items.lock().unwrap().push(food.clone());
+            Ok(food)
         }
-        async fn get_ingredient(&self, id: IngredientId) -> AppResult<Option<Ingredient>> {
-            let db = self.ingredients.lock().unwrap();
+        async fn get_food_item(&self, id: FoodItemId) -> AppResult<Option<FoodItem>> {
+            let db = self.food_items.lock().unwrap();
             Ok(db.iter().find(|i| i.id == id).cloned())
         }
-        async fn search_ingredients(&self, _query: &str, _page: u64, _per_page: u64) -> AppResult<(Vec<Ingredient>, u64)> {
+        async fn search_food_items(&self, _query: &str, _page: u64, _per_page: u64) -> AppResult<(Vec<FoodItem>, u64)> {
             Ok((vec![], 0))
         }
-        async fn create_recipe(&self, _recipe: Recipe, _ingredients: Vec<RecipeIngredient>) -> AppResult<RecipeWithIngredients> {
+        async fn create_recipe(&self, _recipe: Recipe, _food_items: Vec<RecipeFoodItem>) -> AppResult<RecipeWithFoodItems> {
             Err(crate::common::error::AppError::NotFound)
         }
-        async fn get_recipe(&self, _id: RecipeId) -> AppResult<Option<RecipeWithIngredients>> {
+        async fn get_recipe(&self, _id: RecipeId) -> AppResult<Option<RecipeWithFoodItems>> {
             Ok(None)
         }
         async fn list_recipes(&self, _owner_id: Option<UserId>, _page: u64, _per_page: u64) -> AppResult<(Vec<Recipe>, u64)> {
@@ -514,11 +514,45 @@ mod tests {
         async fn get_daily_macros(&self, _user_id: UserId, _date: NaiveDate) -> AppResult<(f64, f64, f64, f64)> {
             Ok((0.0, 0.0, 0.0, 0.0))
         }
-        async fn add_ingredient_portion(&self, portion: IngredientPortion) -> AppResult<IngredientPortion> {
+        async fn add_food_item_portion(&self, portion: FoodItemPortion) -> AppResult<FoodItemPortion> {
             Ok(portion)
         }
-        async fn get_ingredient_portions(&self, _ingredient_id: IngredientId) -> AppResult<Vec<IngredientPortion>> {
+        async fn get_food_item_portions(&self, _food_item_id: FoodItemId) -> AppResult<Vec<FoodItemPortion>> {
             Ok(vec![])
+        }
+
+        // --- Raw Food Cost Mocks ---
+        async fn create_raw_food_cost(&self, pattern: &str, cost: f64, currency: &str) -> AppResult<RawFoodCost> {
+            Ok(RawFoodCost {
+                id: RawFoodCostId::new(),
+                food_pattern: pattern.to_string(),
+                cost_per_100g: cost,
+                price_currency: currency.to_string(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            })
+        }
+        async fn get_raw_food_cost(&self, _id: RawFoodCostId) -> AppResult<Option<RawFoodCost>> {
+            Ok(None)
+        }
+        async fn list_raw_food_costs(&self, _query: &str, _page: u64, _per_page: u64) -> AppResult<(Vec<RawFoodCost>, u64)> {
+            Ok((vec![], 0))
+        }
+        async fn update_raw_food_cost(&self, id: RawFoodCostId, pattern: &str, cost: f64, currency: &str) -> AppResult<RawFoodCost> {
+            Ok(RawFoodCost {
+                id,
+                food_pattern: pattern.to_string(),
+                cost_per_100g: cost,
+                price_currency: currency.to_string(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            })
+        }
+        async fn delete_raw_food_cost(&self, _id: RawFoodCostId) -> AppResult<()> {
+            Ok(())
+        }
+        async fn link_food_item_to_cost(&self, _food_item_id: FoodItemId, _cost_id: Option<RawFoodCostId>) -> AppResult<()> {
+            Ok(())
         }
     }
 
@@ -570,7 +604,7 @@ mod tests {
                     planned_date: NaiveDate::from_ymd_opt(2026, 6, 10).unwrap(),
                     meal_type: "breakfast".to_string(),
                     recipe_id: None,
-                    ingredient_id: None,
+                    food_item_id: None,
                     custom_food_name: Some("Apple".to_string()),
                     servings: 1.0,
                 }
@@ -590,7 +624,7 @@ mod tests {
                     planned_date: NaiveDate::from_ymd_opt(2026, 6, 10).unwrap(),
                     meal_type: "lunch".to_string(),
                     recipe_id: None,
-                    ingredient_id: None,
+                    food_item_id: None,
                     custom_food_name: Some("Salad".to_string()),
                     servings: 1.0,
                 }
