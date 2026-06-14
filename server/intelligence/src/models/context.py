@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RetrievedRecipe(BaseModel):
@@ -47,7 +47,12 @@ class UserContextPackage(BaseModel):
     activity, and candidate recipes into a single envelope.
     """
 
+    model_config = ConfigDict(extra="allow")
+
     user_id: str
+    preferences: dict = Field(default_factory=dict)
+    timeline: str = "weekly"
+    constraints: list[str] = Field(default_factory=list)
 
     # ── Medical / safety ──────────────────────────────────────────────────
     allergies: list[str] = Field(default_factory=list)

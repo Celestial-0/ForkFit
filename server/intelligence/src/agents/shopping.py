@@ -1,6 +1,6 @@
 """Shopping Agent Node for the ForkFit intelligence pipeline.
 
-Aggregates required ingredients across the scheduled plan, subtracts pantry stock, and estimates costs.
+Aggregates required food items across the scheduled plan, subtracts pantry stock, and estimates costs.
 """
 from __future__ import annotations
 
@@ -42,8 +42,8 @@ async def shopping_node(state: GraphState) -> dict[str, ShoppingResult]:
     pantry_savings = 0.0
 
     with timer:
-        # 1. Aggregate ingredient requirements
-        needed_ingredients: dict[str, dict[str, Any]] = {}
+        # 1. Aggregate food item requirements
+        needed_food_items: dict[str, dict[str, Any]] = {}
         
         # Build map of selected recipes for quick lookup
         recipes_map = {r["recipe_id"]: r for r in selected_recipes}
@@ -57,26 +57,26 @@ async def shopping_node(state: GraphState) -> dict[str, ShoppingResult]:
                 if not recipe:
                     continue
                 
-                for ing in recipe.get("ingredients", []):
-                    name = ing["name"]
-                    qty = ing["quantity"] * servings
-                    unit = ing["unit"]
+                for item in recipe.get("food_items", []):
+                    name = item["name"]
+                    qty = item["quantity"] * servings
+                    unit = item["unit"]
                     
-                    if name not in needed_ingredients:
-                        needed_ingredients[name] = {
-                            "ingredient_name": name,
+                    if name not in needed_food_items:
+                        needed_food_items[name] = {
+                            "food_item_name": name,
                             "quantity": 0.0,
                             "unit": unit,
                             "category": "Grains & Produce", # Default category
                             "estimated_cost": 0.0,
                         }
                     
-                    needed_ingredients[name]["quantity"] += qty
+                    needed_food_items[name]["quantity"] += qty
 
         # 2. Subtract pantry items (case-insensitive name match)
-        pantry_map = {str(item.get("ingredient_name", "")).lower().strip(): item for item in pantry_items}
+        pantry_map = {str(item.get("food_item_name", "")).lower().strip(): item for item in pantry_items}
 
-        for name, req in needed_ingredients.items():
+        for name, req in needed_food_items.items():
             name_lower = name.lower().strip()
             quantity = req["quantity"]
             
@@ -96,7 +96,7 @@ async def shopping_node(state: GraphState) -> dict[str, ShoppingResult]:
             
             if quantity > 0.0:
                 shopping_items.append({
-                    "ingredient_name": name,
+                    "food_item_name": name,
                     "quantity": round(quantity, 2),
                     "unit": req["unit"],
                     "category": req["category"],

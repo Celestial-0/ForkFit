@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::common::id::{UserId, RecipeId, IngredientId, FoodLogId, IngredientPortionId};
+use crate::common::id::{UserId, RecipeId, FoodItemId, FoodLogId, FoodItemPortionId, RawFoodCostId};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Ingredient {
-    pub id: IngredientId,
+pub struct FoodItem {
+    pub id: FoodItemId,
     pub name: String,
     pub description: Option<String>,
     pub calories_per_100g: f64,
@@ -15,22 +15,33 @@ pub struct Ingredient {
     pub fiber_per_100g: f64,
     pub sodium_mg_per_100g: f64,
     pub micronutrients: serde_json::Value,
-    pub estimated_cost_per_100g: f64,
+    pub estimated_cost_per_100g: f64, // Populated dynamically via JOIN
     pub price_currency: String,
     pub barcode: Option<String>,
     pub is_verified: bool,
     pub food_code: Option<String>,
     pub primary_source: Option<String>,
+    pub raw_food_cost_id: Option<RawFoodCostId>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IngredientPortion {
-    pub id: IngredientPortionId,
-    pub ingredient_id: IngredientId,
+pub struct FoodItemPortion {
+    pub id: FoodItemPortionId,
+    pub food_item_id: FoodItemId,
     pub serving_unit: String,
     pub grams_equivalent: f64,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RawFoodCost {
+    pub id: RawFoodCostId,
+    pub food_pattern: String,
+    pub cost_per_100g: f64,
+    pub price_currency: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -47,16 +58,18 @@ pub struct Recipe {
     pub cook_time_minutes: Option<i32>,
     pub servings: f64,
     pub cuisine: Option<String>,
+    pub course: Option<String>,
     pub dietary_tags: Vec<String>,
+    pub source_url: Option<String>,
     pub is_public: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RecipeIngredient {
+pub struct RecipeFoodItem {
     pub recipe_id: RecipeId,
-    pub ingredient_id: IngredientId,
+    pub food_item_id: FoodItemId,
     pub quantity: f64,
     pub unit: String,
     pub grams_equivalent: f64,
@@ -64,8 +77,8 @@ pub struct RecipeIngredient {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RecipeIngredientDetail {
-    pub ingredient_id: IngredientId,
+pub struct RecipeFoodItemDetail {
+    pub food_item_id: FoodItemId,
     pub name: String,
     pub quantity: f64,
     pub unit: String,
@@ -81,9 +94,9 @@ pub struct RecipeIngredientDetail {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RecipeWithIngredients {
+pub struct RecipeWithFoodItems {
     pub recipe: Recipe,
-    pub ingredients: Vec<RecipeIngredientDetail>,
+    pub food_items: Vec<RecipeFoodItemDetail>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,7 +106,7 @@ pub struct FoodLog {
     pub logged_at: DateTime<Utc>,
     pub meal_type: String,
     pub recipe_id: Option<RecipeId>,
-    pub ingredient_id: Option<IngredientId>,
+    pub food_item_id: Option<FoodItemId>,
     pub custom_food_name: Option<String>,
     pub quantity: f64,
     pub unit: String,

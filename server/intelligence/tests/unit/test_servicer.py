@@ -143,3 +143,150 @@ async def test_trigger_reflection(mock_run_reflection, mock_servicer):
         feedback_rating=request.feedback_rating,
         feedback_text=request.feedback_text
     )
+
+
+@pytest.mark.asyncio
+@patch("src.server.servicer.get_medical_safety_profile")
+@patch("src.server.servicer.get_user_goals")
+@patch("src.server.servicer.get_latest_biometrics")
+@patch("src.server.servicer.get_user_profile")
+@patch("src.server.servicer.get_recent_workouts")
+@patch("src.server.servicer.get_user_preferences")
+@patch("src.server.servicer.get_active_memories")
+@patch("src.server.servicer.embed_text")
+@patch("src.server.servicer.search_recipes_by_embedding")
+@patch("src.server.servicer.search_memories_by_embedding")
+async def test_build_context_with_missing_db_records(
+    mock_search_memories,
+    mock_search_recipes,
+    mock_embed_text,
+    mock_get_active_memories,
+    mock_get_user_preferences,
+    mock_get_recent_workouts,
+    mock_get_user_profile,
+    mock_get_latest_biometrics,
+    mock_get_user_goals,
+    mock_get_medical_safety_profile,
+    mock_servicer,
+):
+    # Mock return values for DB queries as None or empty structures
+    mock_get_medical_safety_profile.return_value = None  # None safety profile
+    mock_get_user_goals.return_value = []
+    mock_get_latest_biometrics.return_value = {}  # Empty dict for biometrics
+    mock_get_user_profile.return_value = None  # None basic profile
+    mock_get_recent_workouts.return_value = []
+    mock_get_user_preferences.return_value = None  # None preferences
+    mock_get_active_memories.return_value = []
+
+    mock_embed_text.return_value = [0.1] * 1536
+    mock_search_recipes.return_value = []
+    mock_search_memories.return_value = []
+
+    # Build request with empty arrays
+    request = intelligence_pb2.OrchestrateGraphRequest(
+        trace_id="trace-abc",
+        session_id="session-xyz",
+        prompt="I want a healthy dinner plan",
+        context=intelligence_pb2.UserContext(
+            user_id="user-123",
+            allergies=[],
+            medical_conditions=[],
+            preferred_foods=[],
+            avoided_foods=[],
+            daily_calorie_target=0.0,
+        ),
+        history=[]
+    )
+
+    # Run _build_context
+    context_pkg = await mock_servicer._build_context(request)
+
+    # Assertions for successful mapping and fallback values
+    assert context_pkg.user_id == "user-123"
+    assert context_pkg.allergies == []
+    assert context_pkg.medical_conditions == []
+    assert context_pkg.weight_kg is None
+    assert context_pkg.height_cm is None
+    assert context_pkg.age is None
+    assert context_pkg.gender is None
+    assert context_pkg.activity_level == "moderate"
+    assert context_pkg.calorie_target == 2000.0
+    assert context_pkg.macro_targets is None
+
+
+@pytest.mark.asyncio
+@patch("src.server.servicer.get_medical_safety_profile")
+@patch("src.server.servicer.get_user_goals")
+@patch("src.server.servicer.get_latest_biometrics")
+@patch("src.server.servicer.get_user_profile")
+@patch("src.server.servicer.get_recent_workouts")
+@patch("src.server.servicer.get_user_preferences")
+@patch("src.server.servicer.get_active_memories")
+@patch("src.server.servicer.embed_text")
+@patch("src.server.servicer.search_recipes_by_embedding")
+@patch("src.server.servicer.search_memories_by_embedding")
+async def test_build_context_with_stringified_json_db_records(
+    mock_search_memories,
+    mock_search_recipes,
+    mock_embed_text,
+    mock_get_active_memories,
+    mock_get_user_preferences,
+    mock_get_recent_workouts,
+    mock_get_user_profile,
+    mock_get_latest_biometrics,
+    mock_get_user_goals,
+    mock_get_medical_safety_profile,
+    mock_servicer,
+):
+    # Mock return values with stringified JSON blobs
+    mock_get_medical_safety_profile.return_value = {
+        "allergies": '["nuts", "gluten"]',
+        "conditions": '["diabetes"]',
+    }
+    mock_get_user_goals.return_value = []
+    mock_get_latest_biometrics.return_value = {"weight_kg": 75.5, "height_cm": 180.0}
+    mock_get_user_profile.return_value = {"gender": "female", "dob": "1995-05-15"}
+    mock_get_recent_workouts.return_value = []
+    mock_get_user_preferences.return_value = {"preferences": '{"diet": "vegetarian", "activity_level": "active"}'}
+    mock_get_active_memories.return_value = []
+
+    mock_embed_text.return_value = [0.1] * 1536
+    mock_search_recipes.return_value = []
+    mock_search_memories.return_value = []
+
+    request = intelligence_pb2.OrchestrateGraphRequest(
+        trace_id="trace-xyz",
+        session_id="session-123",
+        prompt="Vegetarian dinner plan",
+        context=intelligence_pb2.UserContext(
+            user_id="user-456",
+            allergies=[],
+            medical_conditions=[],
+            daily_calorie_target=2200.0,
+            target_protein_g=140.0,
+            target_carbs_g=250.0,
+            target_fat_g=60.0,
+        ),
+        history=[]
+    )
+
+    # Run _build_context
+    context_pkg = await mock_servicer._build_context(request)
+
+    # Assertions
+    assert context_pkg.user_id == "user-456"
+    assert context_pkg.allergies == ["nuts", "gluten"]
+    assert context_pkg.medical_conditions == ["diabetes"]
+    assert context_pkg.weight_kg == 75.5
+    assert context_pkg.height_cm == 180.0
+    assert context_pkg.gender == "female"
+    assert context_pkg.age is not None
+    assert context_pkg.age > 20
+    assert context_pkg.activity_level == "active"
+    assert context_pkg.calorie_target == 2200.0
+    assert context_pkg.macro_targets is not None
+    assert context_pkg.macro_targets.calories == 2200.0
+    assert context_pkg.macro_targets.protein_g == 140.0
+    assert context_pkg.preferences == {"diet": "vegetarian", "activity_level": "active"}
+
+

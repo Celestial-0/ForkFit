@@ -54,8 +54,8 @@ CREATE TABLE IF NOT EXISTS recipe_embeddings (
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS ingredient_embeddings (
-    ingredient_id uuid PRIMARY KEY REFERENCES ingredients(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS food_item_embeddings (
+    food_item_id uuid PRIMARY KEY REFERENCES food_items(id) ON DELETE CASCADE,
     embedding vector(2560) NOT NULL,
     chunk_text text NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT now()

@@ -44,7 +44,7 @@ def test_calculate_macro_split():
 
 
 def test_calculate_recipe_nutrition():
-    ingredients = [
+    food_items = [
         {
             "grams_equivalent": 100.0,
             "calories_per_100g": 100.0,
@@ -64,7 +64,7 @@ def test_calculate_recipe_nutrition():
             "sodium_mg_per_100g": 500.0,
         }
     ]
-    breakdown = calculate_recipe_nutrition(ingredients)
+    breakdown = calculate_recipe_nutrition(food_items)
     assert breakdown["calories"] == 200.0  # 100 + 100
     assert breakdown["protein_g"] == 20.0   # 10 + 10
     assert breakdown["carbs_g"] == 25.0     # 20 + 5

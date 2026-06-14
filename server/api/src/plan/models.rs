@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc, NaiveDate};
 use serde::{Serialize, Deserialize};
-use crate::common::id::{UserId, MealPlanId, MealPlanItemId, PantryItemId, ShoppingListId, ShoppingListItemId, RecipeId, IngredientId};
+use crate::common::id::{UserId, MealPlanId, MealPlanItemId, PantryItemId, ShoppingListId, ShoppingListItemId, RecipeId, FoodItemId};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MealPlan {
@@ -21,7 +21,7 @@ pub struct MealPlanItem {
     pub planned_date: NaiveDate,
     pub meal_type: String, // 'breakfast', 'lunch', 'dinner', 'snack'
     pub recipe_id: Option<RecipeId>,
-    pub ingredient_id: Option<IngredientId>,
+    pub food_item_id: Option<FoodItemId>,
     pub custom_food_name: Option<String>,
     pub servings: f64,
     pub consumed: bool,
@@ -32,7 +32,7 @@ pub struct MealPlanItem {
 pub struct PantryItem {
     pub id: PantryItemId,
     pub user_id: UserId,
-    pub ingredient_id: IngredientId,
+    pub food_item_id: FoodItemId,
     pub quantity: f64,
     pub unit: String,
     pub expires_at: Option<NaiveDate>,
@@ -55,7 +55,7 @@ pub struct ShoppingList {
 pub struct ShoppingListItem {
     pub id: ShoppingListItemId,
     pub shopping_list_id: ShoppingListId,
-    pub ingredient_id: Option<IngredientId>,
+    pub food_item_id: Option<FoodItemId>,
     pub custom_item_name: Option<String>,
     pub quantity: f64,
     pub unit: String,

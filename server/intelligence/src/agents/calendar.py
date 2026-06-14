@@ -70,7 +70,7 @@ async def calendar_node(state: GraphState) -> dict[str, CalendarResult]:
             logger.warning("calendar_node_no_recipes_selected")
         else:
             llm = get_chat_model(settings)
-            structured_llm = llm.with_structured_output(CalendarDecision)
+            structured_llm = llm.with_structured_output(CalendarDecision, method="json_mode")
 
             recipes_summary = "\n".join(
                 f"- ID: {r['recipe_id']} | Title: {r['title']} | Nutrition: {r.get('nutrition')}"
@@ -83,12 +83,37 @@ async def calendar_node(state: GraphState) -> dict[str, CalendarResult]:
                 f"Selected recipes available:\n"
                 f"{recipes_summary}\n"
                 f"Schedule these recipes into meal slots (breakfast, lunch, dinner, snack) for {days_count} days. "
-                f"If workouts are present, schedule a snack slot pre- or post-workout and adjust portion suggestions in notes."
+                f"If workouts are present, schedule a snack slot pre- or post-workout and adjust portion suggestions in notes.\n\n"
+                f"CRITICAL VARIETY REQUIREMENT: You MUST ensure variety across the days. Do NOT schedule the same recipe for the same meal type "
+                f"(e.g., breakfast or lunch) every single day. Rotate the available recipes creatively across the days so that no single "
+                f"recipe is repeated more than 2 or 3 times in the entire weekly schedule. If there are multiple recipes available, "
+                f"ensure they are distributed evenly."
+            )
+
+            system_prompt = (
+                "You are a meal scheduling assistant and fitness coach. You MUST respond with a JSON object matching the CalendarDecision schema:\n"
+                "{\n"
+                "  \"schedules\": [\n"
+                "    {\n"
+                "      \"day_index\": 1,\n"
+                "      \"meals\": [\n"
+                "        {\n"
+                "          \"meal_type\": \"breakfast\",\n"
+                "          \"recipe_id\": \"UUID string of the recipe\",\n"
+                "          \"servings\": 1.0\n"
+                "        }\n"
+                "      ],\n"
+                "      \"notes\": \"workout adjustments or suggestions\"\n"
+                "    }\n"
+                "  ],\n"
+                "  \"general_notes\": \"general notes\"\n"
+                "}\n"
+                "Do NOT wrap the JSON response in markdown code blocks or any other formatting."
             )
 
             try:
                 decision = await structured_llm.ainvoke([
-                    {"role": "system", "content": "You are a meal scheduling assistant and fitness coach."},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ])
 

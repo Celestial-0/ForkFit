@@ -2,9 +2,9 @@ use sqlx::{PgPool, query, query_scalar};
 use uuid::Uuid;
 
 use crate::common::AppResult;
-use crate::common::id::{UserId, RecipeId, IngredientId, FoodLogId, IngredientPortionId};
+use crate::common::id::{UserId, RecipeId, FoodItemId, FoodLogId, FoodItemPortionId, RawFoodCostId};
 use crate::recipe::models::{
-    Ingredient, Recipe, RecipeIngredient, RecipeIngredientDetail, RecipeWithIngredients, FoodLog, IngredientPortion,
+    FoodItem, Recipe, RecipeFoodItem, RecipeFoodItemDetail, RecipeWithFoodItems, FoodLog, FoodItemPortion, RawFoodCost,
 };
 use crate::recipe::repository::RecipeRepository;
 
@@ -20,106 +20,72 @@ impl PgRecipeRepository {
 }
 
 impl RecipeRepository for PgRecipeRepository {
-    async fn create_ingredient(&self, ing: Ingredient) -> AppResult<Ingredient> {
-        let raw_id: Uuid = ing.id.into();
-        let res = query!(
+    async fn create_food_item(&self, food: FoodItem) -> AppResult<FoodItem> {
+        let raw_id: Uuid = food.id.into();
+        let raw_cost_id: Option<Uuid> = food.raw_food_cost_id.map(|id| id.into());
+        let inserted_id = query_scalar!(
             r#"
-            INSERT INTO ingredients (id, name, description, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g, sodium_mg_per_100g, micronutrients, estimated_cost_per_100g, price_currency, barcode, is_verified, food_code, primary_source)
-            VALUES ($1, $2, $3, $4::float8, $5::float8, $6::float8, $7::float8, $8::float8, $9::float8, $10, $11::float8, $12, $13, $14, $15, $16)
-            RETURNING
-                id as "id: IngredientId",
-                name,
-                description,
-                calories_per_100g::float8 as "calories_per_100g!",
-                protein_per_100g::float8 as "protein_per_100g!",
-                carbs_per_100g::float8 as "carbs_per_100g!",
-                fat_per_100g::float8 as "fat_per_100g!",
-                fiber_per_100g::float8 as "fiber_per_100g!",
-                sodium_mg_per_100g::float8 as "sodium_mg_per_100g!",
-                micronutrients,
-                estimated_cost_per_100g::float8 as "estimated_cost_per_100g!",
-                price_currency,
-                barcode,
-                is_verified,
-                food_code,
-                primary_source,
-                created_at,
-                updated_at
+            INSERT INTO food_items (id, name, description, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g, sodium_mg_per_100g, micronutrients, barcode, is_verified, food_code, primary_source, raw_food_cost_id)
+            VALUES ($1, $2, $3, $4::float8, $5::float8, $6::float8, $7::float8, $8::float8, $9::float8, $10, $11, $12, $13, $14, $15)
+            RETURNING id as "id: FoodItemId"
             "#,
             raw_id,
-            ing.name,
-            ing.description,
-            ing.calories_per_100g,
-            ing.protein_per_100g,
-            ing.carbs_per_100g,
-            ing.fat_per_100g,
-            ing.fiber_per_100g,
-            ing.sodium_mg_per_100g,
-            ing.micronutrients,
-            ing.estimated_cost_per_100g,
-            ing.price_currency,
-            ing.barcode,
-            ing.is_verified,
-            ing.food_code,
-            ing.primary_source
+            food.name,
+            food.description,
+            food.calories_per_100g,
+            food.protein_per_100g,
+            food.carbs_per_100g,
+            food.fat_per_100g,
+            food.fiber_per_100g,
+            food.sodium_mg_per_100g,
+            food.micronutrients,
+            food.barcode,
+            food.is_verified,
+            food.food_code,
+            food.primary_source,
+            raw_cost_id
         )
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(Ingredient {
-            id: res.id,
-            name: res.name,
-            description: res.description,
-            calories_per_100g: res.calories_per_100g,
-            protein_per_100g: res.protein_per_100g,
-            carbs_per_100g: res.carbs_per_100g,
-            fat_per_100g: res.fat_per_100g,
-            fiber_per_100g: res.fiber_per_100g,
-            sodium_mg_per_100g: res.sodium_mg_per_100g,
-            micronutrients: res.micronutrients,
-            estimated_cost_per_100g: res.estimated_cost_per_100g,
-            price_currency: res.price_currency,
-            barcode: res.barcode,
-            is_verified: res.is_verified,
-            food_code: res.food_code,
-            primary_source: res.primary_source,
-            created_at: res.created_at,
-            updated_at: res.updated_at,
-        })
+        let full_food = self.get_food_item(inserted_id).await?;
+        full_food.ok_or(sqlx::Error::RowNotFound.into())
     }
 
-    async fn get_ingredient(&self, id: IngredientId) -> AppResult<Option<Ingredient>> {
+    async fn get_food_item(&self, id: FoodItemId) -> AppResult<Option<FoodItem>> {
         let raw_id: Uuid = id.into();
         let res = query!(
             r#"
             SELECT
-                id as "id: IngredientId",
-                name,
-                description,
-                calories_per_100g::float8 as "calories_per_100g!",
-                protein_per_100g::float8 as "protein_per_100g!",
-                carbs_per_100g::float8 as "carbs_per_100g!",
-                fat_per_100g::float8 as "fat_per_100g!",
-                fiber_per_100g::float8 as "fiber_per_100g!",
-                sodium_mg_per_100g::float8 as "sodium_mg_per_100g!",
-                micronutrients,
-                estimated_cost_per_100g::float8 as "estimated_cost_per_100g!",
-                price_currency,
-                barcode,
-                is_verified,
-                food_code,
-                primary_source,
-                created_at,
-                updated_at
-            FROM ingredients
-            WHERE id = $1
+                i.id as "id!: FoodItemId",
+                i.name as "name!",
+                i.description,
+                i.calories_per_100g::float8 as "calories_per_100g!",
+                i.protein_per_100g::float8 as "protein_per_100g!",
+                i.carbs_per_100g::float8 as "carbs_per_100g!",
+                i.fat_per_100g::float8 as "fat_per_100g!",
+                i.fiber_per_100g::float8 as "fiber_per_100g!",
+                i.sodium_mg_per_100g::float8 as "sodium_mg_per_100g!",
+                i.micronutrients as "micronutrients!",
+                COALESCE(fc.cost_per_100g, 0.00)::float8 as "estimated_cost_per_100g!",
+                COALESCE(fc.price_currency, 'INR') as "price_currency!",
+                i.barcode,
+                i.is_verified as "is_verified!",
+                i.food_code,
+                i.primary_source,
+                i.raw_food_cost_id as "raw_food_cost_id: RawFoodCostId",
+                i.created_at as "created_at!",
+                i.updated_at as "updated_at!"
+            FROM food_items i
+            LEFT JOIN raw_food_costs fc ON i.raw_food_cost_id = fc.id
+            WHERE i.id = $1
             "#,
             raw_id
         )
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(res.map(|r| Ingredient {
+        Ok(res.map(|r| FoodItem {
             id: r.id,
             name: r.name,
             description: r.description,
@@ -136,18 +102,19 @@ impl RecipeRepository for PgRecipeRepository {
             is_verified: r.is_verified,
             food_code: r.food_code,
             primary_source: r.primary_source,
+            raw_food_cost_id: r.raw_food_cost_id,
             created_at: r.created_at,
             updated_at: r.updated_at,
         }))
     }
 
-    async fn search_ingredients(&self, query: &str, page: u64, per_page: u64) -> AppResult<(Vec<Ingredient>, u64)> {
+    async fn search_food_items(&self, query: &str, page: u64, per_page: u64) -> AppResult<(Vec<FoodItem>, u64)> {
         let limit = per_page as i64;
         let offset = ((page - 1) * per_page) as i64;
         let like_query = format!("%{}%", query);
 
         let total = query_scalar!(
-            r#"SELECT count(*) FROM ingredients WHERE name ILIKE $1"#,
+            r#"SELECT count(*) FROM food_items WHERE name ILIKE $1"#,
             like_query
         )
         .fetch_one(&self.pool)
@@ -157,27 +124,29 @@ impl RecipeRepository for PgRecipeRepository {
         let rows = query!(
             r#"
             SELECT
-                id as "id: IngredientId",
-                name,
-                description,
-                calories_per_100g::float8 as "calories_per_100g!",
-                protein_per_100g::float8 as "protein_per_100g!",
-                carbs_per_100g::float8 as "carbs_per_100g!",
-                fat_per_100g::float8 as "fat_per_100g!",
-                fiber_per_100g::float8 as "fiber_per_100g!",
-                sodium_mg_per_100g::float8 as "sodium_mg_per_100g!",
-                micronutrients,
-                estimated_cost_per_100g::float8 as "estimated_cost_per_100g!",
-                price_currency,
-                barcode,
-                is_verified,
-                food_code,
-                primary_source,
-                created_at,
-                updated_at
-            FROM ingredients
-            WHERE name ILIKE $1
-            ORDER BY name ASC
+                i.id as "id!: FoodItemId",
+                i.name as "name!",
+                i.description,
+                i.calories_per_100g::float8 as "calories_per_100g!",
+                i.protein_per_100g::float8 as "protein_per_100g!",
+                i.carbs_per_100g::float8 as "carbs_per_100g!",
+                i.fat_per_100g::float8 as "fat_per_100g!",
+                i.fiber_per_100g::float8 as "fiber_per_100g!",
+                i.sodium_mg_per_100g::float8 as "sodium_mg_per_100g!",
+                i.micronutrients as "micronutrients!",
+                COALESCE(fc.cost_per_100g, 0.00)::float8 as "estimated_cost_per_100g!",
+                COALESCE(fc.price_currency, 'INR') as "price_currency!",
+                i.barcode,
+                i.is_verified as "is_verified!",
+                i.food_code,
+                i.primary_source,
+                i.raw_food_cost_id as "raw_food_cost_id: RawFoodCostId",
+                i.created_at as "created_at!",
+                i.updated_at as "updated_at!"
+            FROM food_items i
+            LEFT JOIN raw_food_costs fc ON i.raw_food_cost_id = fc.id
+            WHERE i.name ILIKE $1
+            ORDER BY i.name ASC
             LIMIT $2 OFFSET $3
             "#,
             like_query,
@@ -187,9 +156,9 @@ impl RecipeRepository for PgRecipeRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        let ingredients = rows
+        let food_items = rows
             .into_iter()
-            .map(|r| Ingredient {
+            .map(|r| FoodItem {
                 id: r.id,
                 name: r.name,
                 description: r.description,
@@ -206,40 +175,41 @@ impl RecipeRepository for PgRecipeRepository {
                 is_verified: r.is_verified,
                 food_code: r.food_code,
                 primary_source: r.primary_source,
+                raw_food_cost_id: r.raw_food_cost_id,
                 created_at: r.created_at,
                 updated_at: r.updated_at,
             })
             .collect();
 
-        Ok((ingredients, total))
+        Ok((food_items, total))
     }
 
-    async fn add_ingredient_portion(&self, portion: IngredientPortion) -> AppResult<IngredientPortion> {
+    async fn add_food_item_portion(&self, portion: FoodItemPortion) -> AppResult<FoodItemPortion> {
         let raw_id: Uuid = portion.id.into();
-        let raw_ingredient_id: Uuid = portion.ingredient_id.into();
+        let raw_food_item_id: Uuid = portion.food_item_id.into();
         let res = query!(
             r#"
-            INSERT INTO ingredient_portions (id, ingredient_id, serving_unit, grams_equivalent)
+            INSERT INTO food_item_portions (id, food_item_id, serving_unit, grams_equivalent)
             VALUES ($1, $2, $3, $4::float8)
             RETURNING
-                id as "id: IngredientPortionId",
-                ingredient_id as "ingredient_id: IngredientId",
+                id as "id: FoodItemPortionId",
+                food_item_id as "food_item_id: FoodItemId",
                 serving_unit,
                 grams_equivalent::float8 as "grams_equivalent!",
                 created_at,
                 updated_at
             "#,
             raw_id,
-            raw_ingredient_id,
+            raw_food_item_id,
             portion.serving_unit,
             portion.grams_equivalent
         )
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(IngredientPortion {
+        Ok(FoodItemPortion {
             id: res.id,
-            ingredient_id: res.ingredient_id,
+            food_item_id: res.food_item_id,
             serving_unit: res.serving_unit,
             grams_equivalent: res.grams_equivalent,
             created_at: res.created_at,
@@ -247,31 +217,31 @@ impl RecipeRepository for PgRecipeRepository {
         })
     }
 
-    async fn get_ingredient_portions(&self, ingredient_id: IngredientId) -> AppResult<Vec<IngredientPortion>> {
-        let raw_ingredient_id: Uuid = ingredient_id.into();
+    async fn get_food_item_portions(&self, food_item_id: FoodItemId) -> AppResult<Vec<FoodItemPortion>> {
+        let raw_food_item_id: Uuid = food_item_id.into();
         let rows = query!(
             r#"
             SELECT
-                id as "id: IngredientPortionId",
-                ingredient_id as "ingredient_id: IngredientId",
+                id as "id: FoodItemPortionId",
+                food_item_id as "food_item_id: FoodItemId",
                 serving_unit,
                 grams_equivalent::float8 as "grams_equivalent!",
                 created_at,
                 updated_at
-            FROM ingredient_portions
-            WHERE ingredient_id = $1
+            FROM food_item_portions
+            WHERE food_item_id = $1
             ORDER BY serving_unit ASC
             "#,
-            raw_ingredient_id
+            raw_food_item_id
         )
         .fetch_all(&self.pool)
         .await?;
 
         let portions = rows
             .into_iter()
-            .map(|r| IngredientPortion {
+            .map(|r| FoodItemPortion {
                 id: r.id,
-                ingredient_id: r.ingredient_id,
+                food_item_id: r.food_item_id,
                 serving_unit: r.serving_unit,
                 grams_equivalent: r.grams_equivalent,
                 created_at: r.created_at,
@@ -282,15 +252,15 @@ impl RecipeRepository for PgRecipeRepository {
         Ok(portions)
     }
 
-    async fn create_recipe(&self, recipe: Recipe, ingredients: Vec<RecipeIngredient>) -> AppResult<RecipeWithIngredients> {
+    async fn create_recipe(&self, recipe: Recipe, food_items: Vec<RecipeFoodItem>) -> AppResult<RecipeWithFoodItems> {
         let mut tx = self.pool.begin().await?;
         let raw_recipe_id: Uuid = recipe.id.into();
         
         // 1. Insert Recipe
         query!(
             r#"
-            INSERT INTO recipes (id, owner_id, parent_recipe_id, title, description, instructions, prep_time_minutes, cook_time_minutes, servings, cuisine, dietary_tags, is_public)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::float8, $10, $11, $12)
+            INSERT INTO recipes (id, owner_id, parent_recipe_id, title, description, instructions, prep_time_minutes, cook_time_minutes, servings, cuisine, course, dietary_tags, source_url, is_public)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::float8, $10, $11, $12, $13, $14)
             "#,
             raw_recipe_id,
             recipe.owner_id as Option<UserId>,
@@ -302,25 +272,27 @@ impl RecipeRepository for PgRecipeRepository {
             recipe.cook_time_minutes,
             recipe.servings,
             recipe.cuisine,
+            recipe.course,
             &recipe.dietary_tags,
+            recipe.source_url,
             recipe.is_public
         )
         .execute(&mut *tx)
         .await?;
 
-        // 2. Insert Recipe Ingredients
-        for ri in ingredients {
+        // 2. Insert Recipe Food Items
+        for rf in food_items {
             query!(
                 r#"
-                INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, grams_equivalent, notes)
+                INSERT INTO recipe_food_items (recipe_id, food_item_id, quantity, unit, grams_equivalent, notes)
                 VALUES ($1, $2, $3::float8, $4, $5::float8, $6)
                 "#,
                 raw_recipe_id,
-                ri.ingredient_id as IngredientId,
-                ri.quantity,
-                ri.unit,
-                ri.grams_equivalent,
-                ri.notes
+                rf.food_item_id as FoodItemId,
+                rf.quantity,
+                rf.unit,
+                rf.grams_equivalent,
+                rf.notes
             )
             .execute(&mut *tx)
             .await?;
@@ -333,7 +305,7 @@ impl RecipeRepository for PgRecipeRepository {
         details.ok_or(sqlx::Error::RowNotFound.into())
     }
 
-    async fn get_recipe(&self, id: RecipeId) -> AppResult<Option<RecipeWithIngredients>> {
+    async fn get_recipe(&self, id: RecipeId) -> AppResult<Option<RecipeWithFoodItems>> {
         let raw_id: Uuid = id.into();
         let recipe_row = query!(
             r#"
@@ -348,7 +320,9 @@ impl RecipeRepository for PgRecipeRepository {
                 cook_time_minutes,
                 servings::float8 as "servings!",
                 cuisine,
+                course,
                 dietary_tags,
+                source_url,
                 is_public,
                 created_at,
                 updated_at
@@ -372,7 +346,9 @@ impl RecipeRepository for PgRecipeRepository {
                 cook_time_minutes: r.cook_time_minutes,
                 servings: r.servings,
                 cuisine: r.cuisine,
+                course: r.course,
                 dietary_tags: r.dietary_tags,
+                source_url: r.source_url,
                 is_public: r.is_public,
                 created_at: r.created_at,
                 updated_at: r.updated_at,
@@ -380,10 +356,10 @@ impl RecipeRepository for PgRecipeRepository {
             None => return Ok(None),
         };
 
-        let ingredient_rows = query!(
+        let food_item_rows = query!(
             r#"
             SELECT
-                ri.ingredient_id as "ingredient_id: IngredientId",
+                ri.food_item_id as "food_item_id: FoodItemId",
                 i.name,
                 ri.quantity::float8 as "quantity!",
                 ri.unit,
@@ -394,10 +370,11 @@ impl RecipeRepository for PgRecipeRepository {
                 i.fat_per_100g::float8 as "fat_per_100g!",
                 i.fiber_per_100g::float8 as "fiber_per_100g!",
                 i.sodium_mg_per_100g::float8 as "sodium_mg_per_100g!",
-                i.estimated_cost_per_100g::float8 as "estimated_cost_per_100g!",
+                COALESCE(fc.cost_per_100g, 0.00)::float8 as "estimated_cost_per_100g!",
                 ri.notes
-            FROM recipe_ingredients ri
-            JOIN ingredients i ON ri.ingredient_id = i.id
+            FROM recipe_food_items ri
+            JOIN food_items i ON ri.food_item_id = i.id
+            LEFT JOIN raw_food_costs fc ON i.raw_food_cost_id = fc.id
             WHERE ri.recipe_id = $1
             "#,
             raw_id
@@ -405,10 +382,10 @@ impl RecipeRepository for PgRecipeRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        let ingredients = ingredient_rows
+        let food_items = food_item_rows
             .into_iter()
-            .map(|r| RecipeIngredientDetail {
-                ingredient_id: r.ingredient_id,
+            .map(|r| RecipeFoodItemDetail {
+                food_item_id: r.food_item_id,
                 name: r.name,
                 quantity: r.quantity,
                 unit: r.unit,
@@ -424,7 +401,7 @@ impl RecipeRepository for PgRecipeRepository {
             })
             .collect();
 
-        Ok(Some(RecipeWithIngredients { recipe, ingredients }))
+        Ok(Some(RecipeWithFoodItems { recipe, food_items }))
     }
 
     async fn list_recipes(&self, owner_id: Option<UserId>, page: u64, per_page: u64) -> AppResult<(Vec<Recipe>, u64)> {
@@ -453,7 +430,9 @@ impl RecipeRepository for PgRecipeRepository {
                     cook_time_minutes,
                     servings::float8 as "servings!",
                     cuisine,
+                    course,
                     dietary_tags,
+                    source_url,
                     is_public,
                     created_at,
                     updated_at
@@ -482,7 +461,9 @@ impl RecipeRepository for PgRecipeRepository {
                     cook_time_minutes: r.cook_time_minutes,
                     servings: r.servings,
                     cuisine: r.cuisine,
+                    course: r.course,
                     dietary_tags: r.dietary_tags,
+                    source_url: r.source_url,
                     is_public: r.is_public,
                     created_at: r.created_at,
                     updated_at: r.updated_at,
@@ -511,7 +492,9 @@ impl RecipeRepository for PgRecipeRepository {
                     cook_time_minutes,
                     servings::float8 as "servings!",
                     cuisine,
+                    course,
                     dietary_tags,
+                    source_url,
                     is_public,
                     created_at,
                     updated_at
@@ -539,7 +522,9 @@ impl RecipeRepository for PgRecipeRepository {
                     cook_time_minutes: r.cook_time_minutes,
                     servings: r.servings,
                     cuisine: r.cuisine,
+                    course: r.course,
                     dietary_tags: r.dietary_tags,
+                    source_url: r.source_url,
                     is_public: r.is_public,
                     created_at: r.created_at,
                     updated_at: r.updated_at,
@@ -567,7 +552,9 @@ impl RecipeRepository for PgRecipeRepository {
                 cook_time_minutes,
                 servings::float8 as "servings!",
                 cuisine,
+                course,
                 dietary_tags,
+                source_url,
                 is_public,
                 created_at,
                 updated_at
@@ -593,7 +580,9 @@ impl RecipeRepository for PgRecipeRepository {
                 cook_time_minutes: r.cook_time_minutes,
                 servings: r.servings,
                 cuisine: r.cuisine,
+                course: r.course,
                 dietary_tags: r.dietary_tags,
+                source_url: r.source_url,
                 is_public: r.is_public,
                 created_at: r.created_at,
                 updated_at: r.updated_at,
@@ -607,7 +596,7 @@ impl RecipeRepository for PgRecipeRepository {
         let raw_id: Uuid = log.id.into();
         let res = query!(
             r#"
-            INSERT INTO food_logs (id, user_id, logged_at, meal_type, recipe_id, ingredient_id, custom_food_name, quantity, unit, calories, protein, carbs, fats, micronutrients_snapshot)
+            INSERT INTO food_logs (id, user_id, logged_at, meal_type, recipe_id, food_item_id, custom_food_name, quantity, unit, calories, protein, carbs, fats, micronutrients_snapshot)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8::float8, $9, $10::float8, $11::float8, $12::float8, $13::float8, $14)
             RETURNING
                 id as "id: FoodLogId",
@@ -615,7 +604,7 @@ impl RecipeRepository for PgRecipeRepository {
                 logged_at,
                 meal_type,
                 recipe_id as "recipe_id: RecipeId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 custom_food_name,
                 quantity::float8 as "quantity!",
                 unit,
@@ -631,7 +620,7 @@ impl RecipeRepository for PgRecipeRepository {
             log.logged_at,
             log.meal_type,
             log.recipe_id as Option<RecipeId>,
-            log.ingredient_id as Option<IngredientId>,
+            log.food_item_id as Option<FoodItemId>,
             log.custom_food_name,
             log.quantity,
             log.unit,
@@ -650,7 +639,7 @@ impl RecipeRepository for PgRecipeRepository {
             logged_at: res.logged_at,
             meal_type: res.meal_type,
             recipe_id: res.recipe_id,
-            ingredient_id: res.ingredient_id,
+            food_item_id: res.food_item_id,
             custom_food_name: res.custom_food_name,
             quantity: res.quantity,
             unit: res.unit,
@@ -683,7 +672,7 @@ impl RecipeRepository for PgRecipeRepository {
                 logged_at,
                 meal_type,
                 recipe_id as "recipe_id: RecipeId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 custom_food_name,
                 quantity::float8 as "quantity!",
                 unit,
@@ -713,7 +702,7 @@ impl RecipeRepository for PgRecipeRepository {
                 logged_at: r.logged_at,
                 meal_type: r.meal_type,
                 recipe_id: r.recipe_id,
-                ingredient_id: r.ingredient_id,
+                food_item_id: r.food_item_id,
                 custom_food_name: r.custom_food_name,
                 quantity: r.quantity,
                 unit: r.unit,
@@ -751,5 +740,239 @@ impl RecipeRepository for PgRecipeRepository {
         .await?;
 
         Ok((row.calories, row.protein, row.carbs, row.fats))
+    }
+
+    // --- Raw Food Cost Methods (Admin) ---
+
+    async fn create_raw_food_cost(&self, pattern: &str, cost: f64, currency: &str) -> AppResult<RawFoodCost> {
+        let mut tx = self.pool.begin().await?;
+        let id = RawFoodCostId::new();
+        let raw_id: Uuid = id.into();
+
+        query!(
+            r#"
+            INSERT INTO raw_food_costs (id, food_pattern, cost_per_100g, price_currency)
+            VALUES ($1, $2, $3::float8, $4)
+            "#,
+            raw_id,
+            pattern,
+            cost,
+            currency
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        // Auto-link food items matching the pattern
+        query!(
+            r#"
+            UPDATE food_items
+            SET raw_food_cost_id = $1
+            WHERE name ILIKE '%' || $2 || '%'
+              AND raw_food_cost_id IS NULL
+            "#,
+            raw_id,
+            pattern
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        let res = query!(
+            r#"
+            SELECT
+                id as "id: RawFoodCostId",
+                food_pattern,
+                cost_per_100g::float8 as "cost_per_100g!",
+                price_currency,
+                created_at,
+                updated_at
+            FROM raw_food_costs
+            WHERE id = $1
+            "#,
+            raw_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(RawFoodCost {
+            id: res.id,
+            food_pattern: res.food_pattern,
+            cost_per_100g: res.cost_per_100g,
+            price_currency: res.price_currency,
+            created_at: res.created_at,
+            updated_at: res.updated_at,
+        })
+    }
+
+    async fn get_raw_food_cost(&self, id: RawFoodCostId) -> AppResult<Option<RawFoodCost>> {
+        let raw_id: Uuid = id.into();
+        let res = query!(
+            r#"
+            SELECT
+                id as "id: RawFoodCostId",
+                food_pattern,
+                cost_per_100g::float8 as "cost_per_100g!",
+                price_currency,
+                created_at,
+                updated_at
+            FROM raw_food_costs
+            WHERE id = $1
+            "#,
+            raw_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(res.map(|r| RawFoodCost {
+            id: r.id,
+            food_pattern: r.food_pattern,
+            cost_per_100g: r.cost_per_100g,
+            price_currency: r.price_currency,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        }))
+    }
+
+    async fn list_raw_food_costs(&self, query: &str, page: u64, per_page: u64) -> AppResult<(Vec<RawFoodCost>, u64)> {
+        let limit = per_page as i64;
+        let offset = ((page - 1) * per_page) as i64;
+        let like_query = format!("%{}%", query);
+
+        let total = query_scalar!(
+            r#"SELECT count(*) FROM raw_food_costs WHERE food_pattern ILIKE $1"#,
+            like_query
+        )
+        .fetch_one(&self.pool)
+        .await?
+        .unwrap_or(0) as u64;
+
+        let rows = query!(
+            r#"
+            SELECT
+                id as "id: RawFoodCostId",
+                food_pattern,
+                cost_per_100g::float8 as "cost_per_100g!",
+                price_currency,
+                created_at,
+                updated_at
+            FROM raw_food_costs
+            WHERE food_pattern ILIKE $1
+            ORDER BY food_pattern ASC
+            LIMIT $2 OFFSET $3
+            "#,
+            like_query,
+            limit,
+            offset
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let costs = rows
+            .into_iter()
+            .map(|r| RawFoodCost {
+                id: r.id,
+                food_pattern: r.food_pattern,
+                cost_per_100g: r.cost_per_100g,
+                price_currency: r.price_currency,
+                created_at: r.created_at,
+                updated_at: r.updated_at,
+            })
+            .collect();
+
+        Ok((costs, total))
+    }
+
+    async fn update_raw_food_cost(&self, id: RawFoodCostId, pattern: &str, cost: f64, currency: &str) -> AppResult<RawFoodCost> {
+        let mut tx = self.pool.begin().await?;
+        let raw_id: Uuid = id.into();
+
+        query!(
+            r#"
+            UPDATE raw_food_costs
+            SET food_pattern = $2, cost_per_100g = $3::float8, price_currency = $4, updated_at = NOW()
+            WHERE id = $1
+            "#,
+            raw_id,
+            pattern,
+            cost,
+            currency
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        // Re-link food items that match the new pattern
+        query!(
+            r#"
+            UPDATE food_items
+            SET raw_food_cost_id = $1
+            WHERE name ILIKE '%' || $2 || '%'
+              AND (raw_food_cost_id IS NULL OR raw_food_cost_id = $1)
+            "#,
+            raw_id,
+            pattern
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        let res = query!(
+            r#"
+            SELECT
+                id as "id: RawFoodCostId",
+                food_pattern,
+                cost_per_100g::float8 as "cost_per_100g!",
+                price_currency,
+                created_at,
+                updated_at
+            FROM raw_food_costs
+            WHERE id = $1
+            "#,
+            raw_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(RawFoodCost {
+            id: res.id,
+            food_pattern: res.food_pattern,
+            cost_per_100g: res.cost_per_100g,
+            price_currency: res.price_currency,
+            created_at: res.created_at,
+            updated_at: res.updated_at,
+        })
+    }
+
+    async fn delete_raw_food_cost(&self, id: RawFoodCostId) -> AppResult<()> {
+        let raw_id: Uuid = id.into();
+        query!(
+            r#"
+            DELETE FROM raw_food_costs
+            WHERE id = $1
+            "#,
+            raw_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn link_food_item_to_cost(&self, food_item_id: FoodItemId, cost_id: Option<RawFoodCostId>) -> AppResult<()> {
+        let raw_food_item_id: Uuid = food_item_id.into();
+        let raw_cost_id: Option<Uuid> = cost_id.map(|id| id.into());
+
+        query!(
+            r#"
+            UPDATE food_items
+            SET raw_food_cost_id = $2
+            WHERE id = $1
+            "#,
+            raw_food_item_id,
+            raw_cost_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
     }
 }

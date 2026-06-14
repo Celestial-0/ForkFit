@@ -18,10 +18,16 @@ async def test_budget_node_skipped():
 
 
 @pytest.mark.asyncio
+@patch("src.agents.budget.get_recipe_with_food_items")
 @patch("src.agents.budget.calculate_recipe_cost")
-async def test_budget_node_within_budget(mock_calculate_cost):
+async def test_budget_node_within_budget(mock_calculate_cost, mock_get_recipe):
     # Mock cost of recipes to be under the budget limit
     mock_calculate_cost.side_effect = lambda pool, recipe_id: 150.0 if recipe_id == "recipe-1" else 100.0
+    mock_get_recipe.return_value = {
+        "food_items": [
+            {"food_item_name": "Paneer", "estimated_cost_per_100g": 10.0}
+        ]
+    }
 
     mock_callback = AsyncMock()
     settings = Settings(database_url="postgresql://localhost/db")
@@ -54,11 +60,17 @@ async def test_budget_node_within_budget(mock_calculate_cost):
 
 
 @pytest.mark.asyncio
+@patch("src.agents.budget.get_recipe_with_food_items")
 @patch("src.agents.budget.get_chat_model")
 @patch("src.agents.budget.calculate_recipe_cost")
-async def test_budget_node_over_budget(mock_calculate_cost, mock_get_chat_model):
+async def test_budget_node_over_budget(mock_calculate_cost, mock_get_chat_model, mock_get_recipe):
     # Mock costs: average cost (250) is greater than budget limit (200)
     mock_calculate_cost.side_effect = lambda pool, recipe_id: 300.0 if recipe_id == "recipe-1" else 200.0
+    mock_get_recipe.return_value = {
+        "food_items": [
+            {"food_item_name": "Avocado", "estimated_cost_per_100g": 50.0}
+        ]
+    }
 
     # Mock LLM and its response
     mock_llm = MagicMock()

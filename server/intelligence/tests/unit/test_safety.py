@@ -6,12 +6,12 @@ from src.config import Settings
 
 
 @pytest.mark.asyncio
-@patch("src.agents.safety.get_recipe_allergen_ingredients")
-async def test_safety_node_allergy_blocked(mock_get_allergen_ingredients):
+@patch("src.agents.safety.get_recipe_allergen_food_items")
+async def test_safety_node_allergy_blocked(mock_get_allergen_food_items):
     # Mock return values
     # Recipe 1 contains peanuts, Recipe 2 is safe
-    mock_get_allergen_ingredients.side_effect = lambda pool, recipe_id, allergens: (
-        [{"ingredient_name": "peanut", "grams_equivalent": 10.0}]
+    mock_get_allergen_food_items.side_effect = lambda pool, recipe_id, allergens: (
+        [{"food_item_name": "peanut", "grams_equivalent": 10.0}]
         if recipe_id == "recipe-1"
         else []
     )

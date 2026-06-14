@@ -83,13 +83,13 @@ def calculate_macro_split(tdee: float, goal: str) -> dict[str, float]:
     }
 
 
-def calculate_recipe_nutrition(ingredients: list[dict]) -> dict[str, float]:
-    """Sum nutrition from a list of ingredient dicts.
+def calculate_recipe_nutrition(food_items: list[dict]) -> dict[str, float]:
+    """Sum nutrition from a list of food item dicts.
 
-    Each ingredient dict must contain per-100g values and a
+    Each food item dict must contain per-100g values and a
     grams_equivalent field indicating the actual quantity used.
 
-    Required keys per ingredient:
+    Required keys per food item:
         calories_per_100g, protein_per_100g, carbs_per_100g,
         fat_per_100g, fiber_per_100g, sodium_mg_per_100g,
         grams_equivalent.
@@ -105,14 +105,14 @@ def calculate_recipe_nutrition(ingredients: list[dict]) -> dict[str, float]:
         "fiber_g": 0.0,
         "sodium_mg": 0.0,
     }
-    for ing in ingredients:
-        factor = float(ing.get("grams_equivalent", 0)) / 100.0
-        totals["calories"] += float(ing.get("calories_per_100g", 0)) * factor
-        totals["protein_g"] += float(ing.get("protein_per_100g", 0)) * factor
-        totals["carbs_g"] += float(ing.get("carbs_per_100g", 0)) * factor
-        totals["fat_g"] += float(ing.get("fat_per_100g", 0)) * factor
-        totals["fiber_g"] += float(ing.get("fiber_per_100g", 0)) * factor
-        totals["sodium_mg"] += float(ing.get("sodium_mg_per_100g", 0)) * factor
+    for item in food_items:
+        factor = float(item.get("grams_equivalent", 0)) / 100.0
+        totals["calories"] += float(item.get("calories_per_100g", 0)) * factor
+        totals["protein_g"] += float(item.get("protein_per_100g", 0)) * factor
+        totals["carbs_g"] += float(item.get("carbs_per_100g", 0)) * factor
+        totals["fat_g"] += float(item.get("fat_per_100g", 0)) * factor
+        totals["fiber_g"] += float(item.get("fiber_per_100g", 0)) * factor
+        totals["sodium_mg"] += float(item.get("sodium_mg_per_100g", 0)) * factor
 
     return {k: round(v, 1) for k, v in totals.items()}
 

@@ -14,44 +14,44 @@ use crate::infra::pg::recipe_repo::PgRecipeRepository;
 use super::service::RecipeService;
 use super::types::*;
 
-// --- Ingredients Handlers ---
+// --- Food Item Handlers ---
 
-pub async fn create_ingredient(
+pub async fn create_food_item(
     State(state): State<Arc<AppState>>,
     _user: CurrentUser, // Verify authenticated
-    Json(payload): Json<CreateIngredientRequest>,
-) -> AppResult<Json<IngredientResponse>> {
+    Json(payload): Json<CreateFoodItemRequest>,
+) -> AppResult<Json<FoodItemResponse>> {
     let repo = PgRecipeRepository::new(state.db.clone());
     let service = RecipeService::new(repo);
-    let ing = service.create_ingredient(payload).await?;
-    Ok(Json(IngredientResponse::from(ing)))
+    let food = service.create_food_item(payload).await?;
+    Ok(Json(FoodItemResponse::from(food)))
 }
 
-pub async fn get_ingredient(
+pub async fn get_food_item(
     State(state): State<Arc<AppState>>,
     _user: CurrentUser,
-    Path(id): Path<crate::common::id::IngredientId>,
-) -> AppResult<Json<IngredientResponse>> {
+    Path(id): Path<crate::common::id::FoodItemId>,
+) -> AppResult<Json<FoodItemResponse>> {
     let repo = PgRecipeRepository::new(state.db.clone());
     let service = RecipeService::new(repo);
-    let ing = service.get_ingredient(id).await?;
-    Ok(Json(IngredientResponse::from(ing)))
+    let food = service.get_food_item(id).await?;
+    Ok(Json(FoodItemResponse::from(food)))
 }
 
-pub async fn search_ingredients(
+pub async fn search_food_items(
     State(state): State<Arc<AppState>>,
     _user: CurrentUser,
     Query(params): Query<PaginationParams>,
     Query(search): Query<SearchQuery>,
-) -> AppResult<Json<PaginatedResponse<IngredientResponse>>> {
+) -> AppResult<Json<PaginatedResponse<FoodItemResponse>>> {
     let repo = PgRecipeRepository::new(state.db.clone());
     let service = RecipeService::new(repo);
     let page = params.page();
     let per_page = params.per_page();
     
-    let (ings, total) = service.search_ingredients(&search.q.unwrap_or_default(), page, per_page).await?;
+    let (foods, total) = service.search_food_items(&search.q.unwrap_or_default(), page, per_page).await?;
     
-    let data = ings.into_iter().map(IngredientResponse::from).collect();
+    let data = foods.into_iter().map(FoodItemResponse::from).collect();
     let meta = PaginationMeta::new(page, per_page, total);
     Ok(Json(PaginatedResponse { data, meta }))
 }

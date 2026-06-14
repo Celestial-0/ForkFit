@@ -3,7 +3,7 @@ use uuid::Uuid;
 use chrono::NaiveDate;
 
 use crate::common::AppResult;
-use crate::common::id::{UserId, MealPlanId, MealPlanItemId, PantryItemId, ShoppingListId, ShoppingListItemId, RecipeId, IngredientId};
+use crate::common::id::{UserId, MealPlanId, MealPlanItemId, PantryItemId, ShoppingListId, ShoppingListItemId, RecipeId, FoodItemId};
 use crate::plan::models::{MealPlan, MealPlanItem, PantryItem, ShoppingList, ShoppingListItem};
 use crate::plan::repository::PlanRepository;
 
@@ -77,11 +77,11 @@ impl PlanRepository for PgPlanRepository {
         for item in items {
             let item_id: Uuid = item.id.into();
             let recipe_id_uuid: Option<Uuid> = item.recipe_id.map(|id| id.into());
-            let ingredient_id_uuid: Option<Uuid> = item.ingredient_id.map(|id| id.into());
+            let food_item_id_uuid: Option<Uuid> = item.food_item_id.map(|id| id.into());
 
             let item_row = sqlx::query!(
                 r#"
-                INSERT INTO meal_plan_items (id, meal_plan_id, planned_date, meal_type, recipe_id, ingredient_id, custom_food_name, servings, consumed, created_at)
+                INSERT INTO meal_plan_items (id, meal_plan_id, planned_date, meal_type, recipe_id, food_item_id, custom_food_name, servings, consumed, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8::float8, $9, $10)
                 RETURNING
                     id as "id: MealPlanItemId",
@@ -89,7 +89,7 @@ impl PlanRepository for PgPlanRepository {
                     planned_date,
                     meal_type,
                     recipe_id as "recipe_id: RecipeId",
-                    ingredient_id as "ingredient_id: IngredientId",
+                    food_item_id as "food_item_id: FoodItemId",
                     custom_food_name,
                     servings::float8 as "servings!",
                     consumed,
@@ -100,7 +100,7 @@ impl PlanRepository for PgPlanRepository {
                 item.planned_date,
                 item.meal_type,
                 recipe_id_uuid,
-                ingredient_id_uuid,
+                food_item_id_uuid,
                 item.custom_food_name,
                 item.servings,
                 item.consumed,
@@ -115,7 +115,7 @@ impl PlanRepository for PgPlanRepository {
                 planned_date: item_row.planned_date,
                 meal_type: item_row.meal_type,
                 recipe_id: item_row.recipe_id,
-                ingredient_id: item_row.ingredient_id,
+                food_item_id: item_row.food_item_id,
                 custom_food_name: item_row.custom_food_name,
                 servings: item_row.servings,
                 consumed: item_row.consumed,
@@ -160,7 +160,7 @@ impl PlanRepository for PgPlanRepository {
                 planned_date,
                 meal_type,
                 recipe_id as "recipe_id: RecipeId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 custom_food_name,
                 servings::float8 as "servings!",
                 consumed,
@@ -193,7 +193,7 @@ impl PlanRepository for PgPlanRepository {
                 planned_date: r.planned_date,
                 meal_type: r.meal_type,
                 recipe_id: r.recipe_id,
-                ingredient_id: r.ingredient_id,
+                food_item_id: r.food_item_id,
                 custom_food_name: r.custom_food_name,
                 servings: r.servings,
                 consumed: r.consumed,
@@ -238,7 +238,7 @@ impl PlanRepository for PgPlanRepository {
                 planned_date,
                 meal_type,
                 recipe_id as "recipe_id: RecipeId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 custom_food_name,
                 servings::float8 as "servings!",
                 consumed,
@@ -271,7 +271,7 @@ impl PlanRepository for PgPlanRepository {
                 planned_date: r.planned_date,
                 meal_type: r.meal_type,
                 recipe_id: r.recipe_id,
-                ingredient_id: r.ingredient_id,
+                food_item_id: r.food_item_id,
                 custom_food_name: r.custom_food_name,
                 servings: r.servings,
                 consumed: r.consumed,
@@ -292,7 +292,7 @@ impl PlanRepository for PgPlanRepository {
                 planned_date,
                 meal_type,
                 recipe_id as "recipe_id: RecipeId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 custom_food_name,
                 servings::float8 as "servings!",
                 consumed,
@@ -311,7 +311,7 @@ impl PlanRepository for PgPlanRepository {
             planned_date: r.planned_date,
             meal_type: r.meal_type,
             recipe_id: r.recipe_id,
-            ingredient_id: r.ingredient_id,
+            food_item_id: r.food_item_id,
             custom_food_name: r.custom_food_name,
             servings: r.servings,
             consumed: r.consumed,
@@ -413,7 +413,7 @@ impl PlanRepository for PgPlanRepository {
                 planned_date,
                 meal_type,
                 recipe_id as "recipe_id: RecipeId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 custom_food_name,
                 servings::float8 as "servings!",
                 consumed,
@@ -431,7 +431,7 @@ impl PlanRepository for PgPlanRepository {
             planned_date: r.planned_date,
             meal_type: r.meal_type,
             recipe_id: r.recipe_id,
-            ingredient_id: r.ingredient_id,
+            food_item_id: r.food_item_id,
             custom_food_name: r.custom_food_name,
             servings: r.servings,
             consumed: r.consumed,
@@ -447,7 +447,7 @@ impl PlanRepository for PgPlanRepository {
             SELECT
                 id as "id: PantryItemId",
                 user_id as "user_id: UserId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 quantity::float8 as "quantity!",
                 unit,
                 expires_at,
@@ -465,7 +465,7 @@ impl PlanRepository for PgPlanRepository {
         Ok(row.map(|r| PantryItem {
             id: r.id,
             user_id: r.user_id,
-            ingredient_id: r.ingredient_id,
+            food_item_id: r.food_item_id,
             quantity: r.quantity,
             unit: r.unit,
             expires_at: r.expires_at,
@@ -482,7 +482,7 @@ impl PlanRepository for PgPlanRepository {
             SELECT
                 id as "id: PantryItemId",
                 user_id as "user_id: UserId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 quantity::float8 as "quantity!",
                 unit,
                 expires_at,
@@ -503,7 +503,7 @@ impl PlanRepository for PgPlanRepository {
             .map(|r| PantryItem {
                 id: r.id,
                 user_id: r.user_id,
-                ingredient_id: r.ingredient_id,
+                food_item_id: r.food_item_id,
                 quantity: r.quantity,
                 unit: r.unit,
                 expires_at: r.expires_at,
@@ -519,16 +519,16 @@ impl PlanRepository for PgPlanRepository {
     async fn create_pantry_item(&self, item: PantryItem) -> AppResult<PantryItem> {
         let item_uuid: Uuid = item.id.into();
         let user_uuid: Uuid = item.user_id.into();
-        let ing_uuid: Uuid = item.ingredient_id.into();
+        let food_uuid: Uuid = item.food_item_id.into();
 
         let row = sqlx::query!(
             r#"
-            INSERT INTO pantry_items (id, user_id, ingredient_id, quantity, unit, expires_at, purchased_at, created_at, updated_at)
+            INSERT INTO pantry_items (id, user_id, food_item_id, quantity, unit, expires_at, purchased_at, created_at, updated_at)
             VALUES ($1, $2, $3, $4::float8, $5, $6, $7, $8, $9)
             RETURNING
                 id as "id: PantryItemId",
                 user_id as "user_id: UserId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 quantity::float8 as "quantity!",
                 unit,
                 expires_at,
@@ -538,7 +538,7 @@ impl PlanRepository for PgPlanRepository {
             "#,
             item_uuid,
             user_uuid,
-            ing_uuid,
+            food_uuid,
             item.quantity,
             item.unit,
             item.expires_at,
@@ -552,7 +552,7 @@ impl PlanRepository for PgPlanRepository {
         Ok(PantryItem {
             id: row.id,
             user_id: row.user_id,
-            ingredient_id: row.ingredient_id,
+            food_item_id: row.food_item_id,
             quantity: row.quantity,
             unit: row.unit,
             expires_at: row.expires_at,
@@ -572,7 +572,7 @@ impl PlanRepository for PgPlanRepository {
             RETURNING
                 id as "id: PantryItemId",
                 user_id as "user_id: UserId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 quantity::float8 as "quantity!",
                 unit,
                 expires_at,
@@ -590,7 +590,7 @@ impl PlanRepository for PgPlanRepository {
         Ok(PantryItem {
             id: row.id,
             user_id: row.user_id,
-            ingredient_id: row.ingredient_id,
+            food_item_id: row.food_item_id,
             quantity: row.quantity,
             unit: row.unit,
             expires_at: row.expires_at,
@@ -649,16 +649,16 @@ impl PlanRepository for PgPlanRepository {
         let mut inserted_items = Vec::new();
         for item in items {
             let item_uuid: Uuid = item.id.into();
-            let ing_uuid: Option<Uuid> = item.ingredient_id.map(|id| id.into());
+            let food_uuid: Option<Uuid> = item.food_item_id.map(|id| id.into());
 
             let item_row = sqlx::query!(
                 r#"
-                INSERT INTO shopping_list_items (id, shopping_list_id, ingredient_id, custom_item_name, quantity, unit, is_acquired, category, created_at, updated_at)
+                INSERT INTO shopping_list_items (id, shopping_list_id, food_item_id, custom_item_name, quantity, unit, is_acquired, category, created_at, updated_at)
                 VALUES ($1, $2, $3, $4, $5::float8, $6, $7, $8, $9, $10)
                 RETURNING
                     id as "id: ShoppingListItemId",
                     shopping_list_id as "shopping_list_id: ShoppingListId",
-                    ingredient_id as "ingredient_id: IngredientId",
+                    food_item_id as "food_item_id: FoodItemId",
                     custom_item_name,
                     quantity::float8 as "quantity!",
                     unit,
@@ -669,7 +669,7 @@ impl PlanRepository for PgPlanRepository {
                 "#,
                 item_uuid,
                 list_uuid,
-                ing_uuid,
+                food_uuid,
                 item.custom_item_name,
                 item.quantity,
                 item.unit,
@@ -684,7 +684,7 @@ impl PlanRepository for PgPlanRepository {
             inserted_items.push(ShoppingListItem {
                 id: item_row.id,
                 shopping_list_id: item_row.shopping_list_id,
-                ingredient_id: item_row.ingredient_id,
+                food_item_id: item_row.food_item_id,
                 custom_item_name: item_row.custom_item_name,
                 quantity: item_row.quantity,
                 unit: item_row.unit,
@@ -727,7 +727,7 @@ impl PlanRepository for PgPlanRepository {
             SELECT
                 id as "id: ShoppingListItemId",
                 shopping_list_id as "shopping_list_id: ShoppingListId",
-                ingredient_id as "ingredient_id: IngredientId",
+                food_item_id as "food_item_id: FoodItemId",
                 custom_item_name,
                 quantity::float8 as "quantity!",
                 unit,
@@ -758,7 +758,7 @@ impl PlanRepository for PgPlanRepository {
             .map(|r| ShoppingListItem {
                 id: r.id,
                 shopping_list_id: r.shopping_list_id,
-                ingredient_id: r.ingredient_id,
+                food_item_id: r.food_item_id,
                 custom_item_name: r.custom_item_name,
                 quantity: r.quantity,
                 unit: r.unit,

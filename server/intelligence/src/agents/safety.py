@@ -8,7 +8,7 @@ from typing import Any
 import structlog
 from src.agents.helpers import Timer, emit_step
 from src.agents.state import BlockedRecipe, GraphState, SafetyResult
-from src.db.repositories.recipe_repo import get_recipe_allergen_ingredients
+from src.db.repositories.recipe_repo import get_recipe_allergen_food_items
 
 logger = structlog.get_logger()
 
@@ -49,10 +49,10 @@ async def safety_node(state: GraphState) -> dict[str, SafetyResult]:
             # Cast recipe_id to str
             recipe_id_str = str(recipe_id)
 
-            # Check for allergen ingredients
+            # Check for allergen food items
             allergen_matches = []
             if allergies:
-                allergen_matches = await get_recipe_allergen_ingredients(
+                allergen_matches = await get_recipe_allergen_food_items(
                     pool, recipe_id_str, allergies
                 )
 
@@ -60,7 +60,7 @@ async def safety_node(state: GraphState) -> dict[str, SafetyResult]:
                 blocked_recipes.append({
                     "recipe_id": recipe_id_str,
                     "title": recipe.get("title", "Unknown"),
-                    "reason": f"Contains allergen ingredients: {', '.join(ing['ingredient_name'] for ing in allergen_matches)}"
+                    "reason": f"Contains allergen food items: {', '.join(item['food_item_name'] for item in allergen_matches)}"
                 })
             else:
                 # No allergen matches, but check medical conditions

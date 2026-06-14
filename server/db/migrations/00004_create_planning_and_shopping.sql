@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS meal_plan_items (
     planned_date date NOT NULL,
     meal_type text NOT NULL, -- 'breakfast', 'lunch', 'dinner', 'snack'
     recipe_id uuid REFERENCES recipes(id) ON DELETE SET NULL,
-    ingredient_id uuid REFERENCES ingredients(id) ON DELETE SET NULL,
+    food_item_id uuid REFERENCES food_items(id) ON DELETE SET NULL,
     custom_food_name text,
     servings numeric(4,2) NOT NULL DEFAULT 1.00,
     consumed boolean NOT NULL DEFAULT false, -- triggers food log creation if checked
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS meal_plan_items (
 CREATE TABLE IF NOT EXISTS pantry_items (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    ingredient_id uuid NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    food_item_id uuid NOT NULL REFERENCES food_items(id) ON DELETE CASCADE,
     quantity numeric(6,2) NOT NULL,
     unit text NOT NULL,
     expires_at date,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS shopping_lists (
 CREATE TABLE IF NOT EXISTS shopping_list_items (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     shopping_list_id uuid NOT NULL REFERENCES shopping_lists(id) ON DELETE CASCADE,
-    ingredient_id uuid REFERENCES ingredients(id) ON DELETE SET NULL,
+    food_item_id uuid REFERENCES food_items(id) ON DELETE SET NULL,
     custom_item_name text,
     quantity numeric(6,2) NOT NULL,
     unit text NOT NULL,

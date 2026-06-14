@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc, NaiveDate};
 use serde::{Deserialize, Serialize};
 
-use crate::common::id::{UserId, RecipeId, IngredientId, FoodLogId};
-use super::models::{Ingredient, Recipe, RecipeIngredientDetail, FoodLog};
+use crate::common::id::{UserId, RecipeId, FoodItemId, FoodLogId, RawFoodCostId};
+use super::models::{FoodItem, Recipe, RecipeFoodItemDetail, FoodLog, RawFoodCost};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateIngredientRequest {
+pub struct CreateFoodItemRequest {
     pub name: String,
     pub description: Option<String>,
     pub calories_per_100g: f64,
@@ -15,14 +15,13 @@ pub struct CreateIngredientRequest {
     pub fiber_per_100g: Option<f64>,
     pub sodium_mg_per_100g: Option<f64>,
     pub micronutrients: Option<serde_json::Value>,
-    pub estimated_cost_per_100g: Option<f64>,
-    pub price_currency: Option<String>,
     pub barcode: Option<String>,
+    pub raw_food_cost_id: Option<RawFoodCostId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IngredientResponse {
-    pub id: IngredientId,
+pub struct FoodItemResponse {
+    pub id: FoodItemId,
     pub name: String,
     pub description: Option<String>,
     pub calories_per_100g: f64,
@@ -36,11 +35,14 @@ pub struct IngredientResponse {
     pub price_currency: String,
     pub barcode: Option<String>,
     pub is_verified: bool,
+    pub food_code: Option<String>,
+    pub primary_source: Option<String>,
+    pub raw_food_cost_id: Option<RawFoodCostId>,
     pub created_at: DateTime<Utc>,
 }
 
-impl From<Ingredient> for IngredientResponse {
-    fn from(i: Ingredient) -> Self {
+impl From<FoodItem> for FoodItemResponse {
+    fn from(i: FoodItem) -> Self {
         Self {
             id: i.id,
             name: i.name,
@@ -56,14 +58,17 @@ impl From<Ingredient> for IngredientResponse {
             price_currency: i.price_currency,
             barcode: i.barcode,
             is_verified: i.is_verified,
+            food_code: i.food_code,
+            primary_source: i.primary_source,
+            raw_food_cost_id: i.raw_food_cost_id,
             created_at: i.created_at,
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RecipeIngredientInput {
-    pub ingredient_id: IngredientId,
+pub struct RecipeFoodItemInput {
+    pub food_item_id: FoodItemId,
     pub quantity: f64,
     pub unit: String,
     pub grams_equivalent: f64,
@@ -80,9 +85,11 @@ pub struct CreateRecipeRequest {
     pub cook_time_minutes: Option<i32>,
     pub servings: f64,
     pub cuisine: Option<String>,
+    pub course: Option<String>,
     pub dietary_tags: Vec<String>,
+    pub source_url: Option<String>,
     pub is_public: bool,
-    pub ingredients: Vec<RecipeIngredientInput>,
+    pub food_items: Vec<RecipeFoodItemInput>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -97,7 +104,9 @@ pub struct RecipeResponse {
     pub cook_time_minutes: Option<i32>,
     pub servings: f64,
     pub cuisine: Option<String>,
+    pub course: Option<String>,
     pub dietary_tags: Vec<String>,
+    pub source_url: Option<String>,
     pub is_public: bool,
     pub created_at: DateTime<Utc>,
 }
@@ -115,7 +124,9 @@ impl From<Recipe> for RecipeResponse {
             cook_time_minutes: r.cook_time_minutes,
             servings: r.servings,
             cuisine: r.cuisine,
+            course: r.course,
             dietary_tags: r.dietary_tags,
+            source_url: r.source_url,
             is_public: r.is_public,
             created_at: r.created_at,
         }
@@ -123,8 +134,8 @@ impl From<Recipe> for RecipeResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RecipeIngredientDetailResponse {
-    pub ingredient_id: IngredientId,
+pub struct RecipeFoodItemDetailResponse {
+    pub food_item_id: FoodItemId,
     pub name: String,
     pub quantity: f64,
     pub unit: String,
@@ -132,10 +143,10 @@ pub struct RecipeIngredientDetailResponse {
     pub notes: Option<String>,
 }
 
-impl From<RecipeIngredientDetail> for RecipeIngredientDetailResponse {
-    fn from(d: RecipeIngredientDetail) -> Self {
+impl From<RecipeFoodItemDetail> for RecipeFoodItemDetailResponse {
+    fn from(d: RecipeFoodItemDetail) -> Self {
         Self {
-            ingredient_id: d.ingredient_id,
+            food_item_id: d.food_item_id,
             name: d.name,
             quantity: d.quantity,
             unit: d.unit,
@@ -158,7 +169,7 @@ pub struct RecipeNutrients {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecipeDetailResponse {
     pub recipe: RecipeResponse,
-    pub ingredients: Vec<RecipeIngredientDetailResponse>,
+    pub food_items: Vec<RecipeFoodItemDetailResponse>,
     pub total_nutrition: RecipeNutrients,
     pub serving_nutrition: RecipeNutrients,
     pub total_estimated_cost: f64,
@@ -171,7 +182,7 @@ pub struct LogFoodRequest {
     pub logged_at: Option<DateTime<Utc>>,
     pub meal_type: String, // 'breakfast', 'lunch', 'dinner', 'snack'
     pub recipe_id: Option<RecipeId>,
-    pub ingredient_id: Option<IngredientId>,
+    pub food_item_id: Option<FoodItemId>,
     pub custom_food_name: Option<String>,
     pub quantity: f64,
     pub unit: String, // 'servings', 'grams'
@@ -190,7 +201,7 @@ pub struct FoodLogResponse {
     pub logged_at: DateTime<Utc>,
     pub meal_type: String,
     pub recipe_id: Option<RecipeId>,
-    pub ingredient_id: Option<IngredientId>,
+    pub food_item_id: Option<FoodItemId>,
     pub custom_food_name: Option<String>,
     pub quantity: f64,
     pub unit: String,
@@ -209,7 +220,7 @@ impl From<FoodLog> for FoodLogResponse {
             logged_at: f.logged_at,
             meal_type: f.meal_type,
             recipe_id: f.recipe_id,
-            ingredient_id: f.ingredient_id,
+            food_item_id: f.food_item_id,
             custom_food_name: f.custom_food_name,
             quantity: f.quantity,
             unit: f.unit,
@@ -229,4 +240,43 @@ pub struct DailyMacrosSummary {
     pub protein: f64,
     pub carbs: f64,
     pub fats: f64,
+}
+
+// --- Raw Food Cost Requests / Responses ---
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateRawFoodCostRequest {
+    pub food_pattern: String,
+    pub cost_per_100g: f64,
+    pub price_currency: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateRawFoodCostRequest {
+    pub food_pattern: String,
+    pub cost_per_100g: f64,
+    pub price_currency: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RawFoodCostResponse {
+    pub id: RawFoodCostId,
+    pub food_pattern: String,
+    pub cost_per_100g: f64,
+    pub price_currency: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl From<RawFoodCost> for RawFoodCostResponse {
+    fn from(c: RawFoodCost) -> Self {
+        Self {
+            id: c.id,
+            food_pattern: c.food_pattern,
+            cost_per_100g: c.cost_per_100g,
+            price_currency: c.price_currency,
+            created_at: c.created_at,
+            updated_at: c.updated_at,
+        }
+    }
 }

@@ -1,9 +1,6 @@
 """LangGraph orchestrator for the ForkFit multi-agent pipeline.
 
-Compiles a deterministic sequential StateGraph that routes through all
-nutrition-planning agents.  Each agent internally checks whether it is
-listed in ``state["required_agents"]`` and performs a fast no-op return
-when it is not needed, keeping the graph topology simple and predictable.
+Compiles a StateGraph with parallel specialist nodes to optimize latency.
 """
 from __future__ import annotations
 
@@ -27,30 +24,16 @@ from src.agents.visualization import visualization_node
 logger = structlog.get_logger()
 
 
-def route_from_planner(state: GraphState) -> str:
-    """Route from planner to the first agent in the sequential chain.
-
-    Rather than building complex dynamic fan-out logic, every agent in the
-    chain is always traversed.  Agents that are not in
-    ``state["required_agents"]`` simply return the state unchanged, so
-    latency cost is negligible.
-    """
-    required = state.get("required_agents", [])
-    logger.info(
-        "route_from_planner",
-        required_agents=required,
-        replan_count=state.get("replan_count", 0),
-    )
-    return "safety"
-
-
 def build_graph() -> CompiledStateGraph:
     """Construct and compile the full ForkFit agent graph.
 
-    Execution order (sequential chain):
-        planner → safety → nutrition → budget → culture → recipe
-        → calendar → shopping → consensus → judge
-        → (visualization → END) | (planner — replan loop)
+    Execution order:
+        planner ───┬──→ safety ─────┬──→ recipe ──→ calendar ──→ shopping ──→ consensus ──→ judge
+                   ├──→ nutrition ──┤
+                   ├──→ budget ─────┤
+                   └──→ culture ────┘
+                   
+        judge ──→ (visualization ──→ END) | (planner — replan loop)
 
     Returns
     -------
@@ -75,14 +58,19 @@ def build_graph() -> CompiledStateGraph:
     # ── Entry point ─────────────────────────────────────────────────
     graph.set_entry_point("planner")
 
-    # ── Planner → first agent via conditional edge ──────────────────
-    graph.add_conditional_edges("planner", route_from_planner)
+    # ── Fan-out from planner to parallel specialist agents ──────────
+    graph.add_edge("planner", "safety")
+    graph.add_edge("planner", "nutrition")
+    graph.add_edge("planner", "budget")
+    graph.add_edge("planner", "culture")
 
-    # ── Sequential chain through specialist agents ──────────────────
-    graph.add_edge("safety", "nutrition")
-    graph.add_edge("nutrition", "budget")
-    graph.add_edge("budget", "culture")
+    # ── Fan-in from specialist agents to recipe compiler ────────────
+    graph.add_edge("safety", "recipe")
+    graph.add_edge("nutrition", "recipe")
+    graph.add_edge("budget", "recipe")
     graph.add_edge("culture", "recipe")
+
+    # ── Sequential remaining chain ──────────────────────────────────
     graph.add_edge("recipe", "calendar")
     graph.add_edge("calendar", "shopping")
     graph.add_edge("shopping", "consensus")

@@ -40,7 +40,7 @@ impl GrpcIntelligenceClient {
         let channel = Channel::from_shared(endpoint_url.clone())
             .map_err(|e| AppError::BadRequest(format!("Invalid gRPC endpoint URL '{}': {}", endpoint_url, e)))?
             .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(60))
+            .timeout(Duration::from_secs(300))
             .tcp_keepalive(Some(Duration::from_secs(30)))
             .connect()
             .await
@@ -58,7 +58,7 @@ impl GrpcIntelligenceClient {
         let channel = Channel::from_shared(endpoint_url.clone())
             .map_err(|e| AppError::BadRequest(format!("Invalid gRPC endpoint URL '{}': {}", endpoint_url, e)))?
             .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(60))
+            .timeout(Duration::from_secs(300))
             .tcp_keepalive(Some(Duration::from_secs(30)))
             .connect_lazy();
 

@@ -31,7 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_workout_logs_user_date ON workout_logs(user_id, l
 
 -- Recipe, Nutrition, and Logging indices
 CREATE INDEX IF NOT EXISTS idx_recipes_owner ON recipes(owner_id);
-CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_ing ON recipe_ingredients(ingredient_id);
+CREATE INDEX IF NOT EXISTS idx_recipe_food_items_food ON recipe_food_items(food_item_id);
 CREATE INDEX IF NOT EXISTS idx_food_logs_user_date ON food_logs(user_id, logged_at DESC);
 
 -- Scheduling and Inventory indices
@@ -46,7 +46,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_date ON audit_logs(actor_user_id
 
 -- Recreate embedding tables with 1536 dimensions (to fit within pgvector HNSW index 2000-dimension limit)
 DROP TABLE IF EXISTS recipe_embeddings CASCADE;
-DROP TABLE IF EXISTS ingredient_embeddings CASCADE;
+DROP TABLE IF EXISTS food_item_embeddings CASCADE;
 DROP TABLE IF EXISTS agent_memory_embeddings CASCADE;
 
 CREATE TABLE recipe_embeddings (
@@ -56,8 +56,8 @@ CREATE TABLE recipe_embeddings (
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE ingredient_embeddings (
-    ingredient_id uuid PRIMARY KEY REFERENCES ingredients(id) ON DELETE CASCADE,
+CREATE TABLE food_item_embeddings (
+    food_item_id uuid PRIMARY KEY REFERENCES food_items(id) ON DELETE CASCADE,
     embedding vector(1536) NOT NULL,
     chunk_text text NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT now()
@@ -73,5 +73,5 @@ CREATE TABLE agent_memory_embeddings (
 -- HNSW Cosine Similarity Vector search indices (pgvector)
 CREATE INDEX IF NOT EXISTS idx_recipe_embeddings_vector ON recipe_embeddings USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS idx_agent_memory_embeddings_vector ON agent_memory_embeddings USING hnsw (embedding vector_cosine_ops);
-CREATE INDEX IF NOT EXISTS idx_ingredient_embeddings_vector ON ingredient_embeddings USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_food_item_embeddings_vector ON food_item_embeddings USING hnsw (embedding vector_cosine_ops);
 

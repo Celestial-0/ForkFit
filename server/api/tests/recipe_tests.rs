@@ -1,8 +1,9 @@
 mod common;
 
 use api::infra::pg::recipe_repo::PgRecipeRepository;
+use api::recipe::repository::RecipeRepository;
 use api::recipe::service::RecipeService;
-use api::recipe::types::{CreateIngredientRequest, CreateRecipeRequest, RecipeIngredientInput};
+use api::recipe::types::{CreateFoodItemRequest, CreateRecipeRequest, RecipeFoodItemInput};
 
 #[tokio::test]
 async fn test_recipe_nutrition_and_cost() {
@@ -10,10 +11,14 @@ async fn test_recipe_nutrition_and_cost() {
     let (user_id, _) = common::setup_test_user(&db).await;
 
     let repo = PgRecipeRepository::new(db.clone());
-    let service = RecipeService::new(repo);
+    let service = RecipeService::new(repo.clone());
 
-    // 1. Create ingredients
-    let ing_req1 = CreateIngredientRequest {
+    // Create raw food costs first
+    let raw_cost1 = repo.create_raw_food_cost("Peanut Butter", 10.0, "INR").await.unwrap();
+    let raw_cost2 = repo.create_raw_food_cost("Whole Milk", 5.0, "INR").await.unwrap();
+
+    // 1. Create food items
+    let food_req1 = CreateFoodItemRequest {
         name: format!("Peanut Butter {}", uuid::Uuid::new_v4()),
         description: Some("Creamy peanut butter".to_string()),
         calories_per_100g: 588.0,
@@ -23,12 +28,11 @@ async fn test_recipe_nutrition_and_cost() {
         fiber_per_100g: Some(6.0),
         sodium_mg_per_100g: Some(429.0),
         micronutrients: Some(serde_json::json!({})),
-        estimated_cost_per_100g: Some(10.0),
-        price_currency: Some("INR".to_string()),
         barcode: None,
+        raw_food_cost_id: Some(raw_cost1.id),
     };
 
-    let ing_req2 = CreateIngredientRequest {
+    let food_req2 = CreateFoodItemRequest {
         name: format!("Whole Milk {}", uuid::Uuid::new_v4()),
         description: Some("Organic whole milk".to_string()),
         calories_per_100g: 61.0,
@@ -38,13 +42,12 @@ async fn test_recipe_nutrition_and_cost() {
         fiber_per_100g: Some(0.0),
         sodium_mg_per_100g: Some(44.0),
         micronutrients: Some(serde_json::json!({})),
-        estimated_cost_per_100g: Some(5.0),
-        price_currency: Some("INR".to_string()),
         barcode: None,
+        raw_food_cost_id: Some(raw_cost2.id),
     };
 
-    let ing1 = service.create_ingredient(ing_req1).await.unwrap();
-    let ing2 = service.create_ingredient(ing_req2).await.unwrap();
+    let food1 = service.create_food_item(food_req1).await.unwrap();
+    let food2 = service.create_food_item(food_req2).await.unwrap();
 
     // 2. Create recipe
     let recipe_req = CreateRecipeRequest {
@@ -56,18 +59,20 @@ async fn test_recipe_nutrition_and_cost() {
         cook_time_minutes: Some(0),
         servings: 2.0,
         cuisine: Some("American".to_string()),
+        course: None,
         dietary_tags: vec!["HighProtein".to_string(), "Bulking".to_string()],
+        source_url: None,
         is_public: true,
-        ingredients: vec![
-            RecipeIngredientInput {
-                ingredient_id: ing1.id,
+        food_items: vec![
+            RecipeFoodItemInput {
+                food_item_id: food1.id,
                 quantity: 50.0,
                 unit: "grams".to_string(),
                 grams_equivalent: 50.0,
                 notes: None,
             },
-            RecipeIngredientInput {
-                ingredient_id: ing2.id,
+            RecipeFoodItemInput {
+                food_item_id: food2.id,
                 quantity: 200.0,
                 unit: "grams".to_string(),
                 grams_equivalent: 200.0,

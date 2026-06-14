@@ -45,5 +45,5 @@ async def test_classify_intent_success(mock_get_chat_model):
     assert result.raw_analysis["reasoning"] == "mocked reasoning"
     
     # Verify mock interactions
-    mock_llm.with_structured_output.assert_called_once_with(IntentBlueprint)
+    mock_llm.with_structured_output.assert_called_once_with(IntentBlueprint, method="json_mode")
     mock_structured_llm.ainvoke.assert_called_once()
