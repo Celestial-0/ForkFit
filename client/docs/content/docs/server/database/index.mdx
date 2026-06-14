@@ -24,7 +24,7 @@ Migrations are located in `server/db/migrations/` and cover the following schema
   </Step>
   <Step>
     ### Recipes & Nutrition (00003_create_recipes_and_nutrition.sql)
-    Configures ingredients, custom recipes, ingredients-to-recipes mapping, and user food logs.
+    Configures food items, raw food costs, custom recipes, food items-to-recipes mapping, and user food logs.
   </Step>
   <Step>
     ### Planning & Shopping (00004_create_planning_and_shopping.sql)
@@ -54,6 +54,8 @@ Migrations are located in `server/db/migrations/` and cover the following schema
 
 Here is a simplified diagram of how the primary tables connect:
 
+<div style={{ overflowX: 'auto', width: '100%' }}>
+
 <Mermaid
   chart={`
 erDiagram
@@ -65,12 +67,15 @@ erDiagram
     users ||--o{ meal_plans : "selects plans"
     users ||--o{ chat_threads : "chats in"
     user_profiles ||--o{ medical_safety : "assesses safety"
-    recipes ||--o{ recipe_ingredients : "contains"
-    ingredients ||--o{ recipe_ingredients : "used in"
+    recipes ||--o{ recipe_food_items : "contains"
+    food_items ||--o{ recipe_food_items : "used in"
+    food_items ||--o| raw_food_costs : "links to"
     meal_plans ||--o{ meal_plan_items : "contains"
     chat_threads ||--o{ chat_messages : "contains"
 `}
 />
+
+</div>
 
 ---
 
@@ -82,7 +87,7 @@ erDiagram
 * **`roles` / `permissions`**: RBAC entities supporting administrative operations.
 
 ### 2. Nutrition & Planner
-* **`ingredients`**: Caloric count, protein (g), fat (g), carbs (g), and category flags.
+* **`food_items`**: Caloric count, protein (g), fat (g), carbs (g), category flags, and optional raw food cost link.
 * **`recipes`**: Title, instructions, preparation time, and nutritional sums.
 * **`food_logs`**: Daily logs tracking consumed foods and cumulative macronutrient summaries.
 * **`meal_plans`**: Meal configurations scheduled for user calendars.

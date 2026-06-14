@@ -1,11 +1,11 @@
 ---
 title: AI Intelligence 
-description: API interfaces for LangGraph orchestration, active memories search, and execution traces.
+description: API interfaces for LangGraph orchestration, active memories listing, search, and execution traces.
 ---
 
 # AI Intelligence 
 
-Endpoints for triggering the cognitive agent loops and auditing execution traces.
+Endpoints for triggering the cognitive agent loops, managing long-term user memories, and auditing execution traces. All intelligence routes are nested under `/api/v1/intelligence`.
 
 ---
 
@@ -35,18 +35,53 @@ An SSE (Server-Sent Events) endpoint streaming real-time tokens, execution step 
 
 ---
 
-## 2. Memory & Traces
+### Classify Query Intent
+
+`POST /api/v1/intelligence/intent`
+
+Allows quick, direct classification of a user query intent without spinning up the entire LangGraph.
+
+---
+
+## 2. Memory Management
+
+### List Active Memories
+
+`GET /api/v1/intelligence/memories`
+
+Retrieves the list of active user preferences, restrictions, and habits extracted by the system.
+
+---
+
+### Deactivate Memory
+
+`DELETE /api/v1/intelligence/memories/{id}`
+
+Deactivates a specific user memory profile entry.
+
+---
 
 ### Search Active Memories
 
 `POST /api/v1/intelligence/memories/search`
 
-Queries the vector-indexed database for personal constraints and habits memories.
+Queries the vector-indexed database for personal constraints and habits memories using pgvector cosine distance.
 
 ---
+
+## 3. Execution Traces
 
 ### List Execution Traces
 
 `GET /api/v1/intelligence/traces`
 
-Retrieves logs of agent decisions, tool execution times, and safety review results.
+Retrieves historical execution traces containing metadata (token usage, latency, status).
+
+---
+
+### Get Trace Details
+
+`GET /api/v1/intelligence/traces/{id}`
+
+Retrieves the complete set of nested step records, input/output JSON payloads, models utilized, and execution latencies for a specific trace ID.
+

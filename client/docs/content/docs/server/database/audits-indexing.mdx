@@ -58,7 +58,7 @@ The system registers specific database indexes to accelerate critical query look
 
 ### Recipes, Nutrition & Lists
 * **`idx_recipes_owner`**: Fetches user-created recipes.
-* **`idx_recipe_ingredients_ing`**: Tracks which recipes contain a specific ingredient.
+* **`idx_recipe_food_items_food`**: Tracks which recipes contain a specific food item.
 * **`idx_food_logs_user_date`**: Speeds up query processing of daily user food logs.
 * **`idx_meal_plan_items_date`**: Speeds up loading scheduled meal calendar pages.
 * **`idx_pantry_items_user`**: Speeds up pulling pantry stock lists.
@@ -73,5 +73,5 @@ Cosine Similarity indices are configured using **pgvector**'s Hierarchical Navig
 ```sql
 CREATE INDEX idx_recipe_embeddings_vector ON recipe_embeddings USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX idx_agent_memory_embeddings_vector ON agent_memory_embeddings USING hnsw (embedding vector_cosine_ops);
-CREATE INDEX idx_ingredient_embeddings_vector ON ingredient_embeddings USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX idx_food_item_embeddings_vector ON food_item_embeddings USING hnsw (embedding vector_cosine_ops);
 ```

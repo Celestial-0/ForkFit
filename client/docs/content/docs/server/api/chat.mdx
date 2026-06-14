@@ -5,11 +5,19 @@ description: Chat threads, messaging endpoints, and feedback submission routes.
 
 # Chat & Feedback 
 
-Endpoints managing communication threads with the AI assistant and logging user reviews.
+Endpoints managing communication threads with the AI assistant and logging user reviews. All chat routes are nested under `/api/v1/threads` and `/api/v1/feedback`.
 
 ---
 
 ## 1. Chat Threads
+
+### List Chat Threads
+
+`GET /api/v1/threads`
+
+Retrieves a list of conversational threads generated for the user.
+
+---
 
 ### Create Chat Thread
 
@@ -26,6 +34,22 @@ Initializes a new conversational session.
 
 ---
 
+### Get Thread Details
+
+`GET /api/v1/threads/{id}`
+
+Retrieves details for a specific conversational thread ID.
+
+---
+
+### Delete Chat Thread
+
+`DELETE /api/v1/threads/{id}`
+
+Removes a chat thread and all its stored message logs.
+
+---
+
 ### List Messages in Thread
 
 `GET /api/v1/threads/{id}/messages`
@@ -38,7 +62,7 @@ Returns a list of conversation logs for a specific thread ID.
 
 `POST /api/v1/threads/{id}/messages`
 
-Appends a new user message to the conversation.
+Appends a new user message to the conversation, which triggers background agent processing.
 
 ---
 
@@ -48,4 +72,5 @@ Appends a new user message to the conversation.
 
 `POST /api/v1/feedback`
 
-Submits a rating and comment regarding system performance or AI advice accuracy.
+Submits user ratings and comments regarding system performance or AI advice accuracy. This feedback is processed asynchronously by the reflection engine to extract long-term user preferences.
+

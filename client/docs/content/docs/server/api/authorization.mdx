@@ -1,11 +1,11 @@
 ---
 title: RBAC & Authorization 
-description: Access control endpoints for roles, permission grants, and user role assignments.
+description: Access control endpoints for roles, permissions, role grants, and user role assignments.
 ---
 
 # RBAC & Authorization 
 
-ForkFit supports robust, granular Role-Based Access Control (RBAC). Admin roles are seeded automatically at startup.
+ForkFit supports robust, granular Role-Based Access Control (RBAC). Admin roles are seeded automatically at startup. All RBAC endpoints are nested under `/api/v1/auth`.
 
 ---
 
@@ -35,7 +35,33 @@ Creates a new access role.
 
 ---
 
-## 2. Permissions & Assignments
+## 2. Permission Management
+
+### List Permissions
+
+`GET /api/v1/auth/permissions`
+
+Returns all configured security permission keys.
+
+---
+
+### Create Custom Permission
+
+`POST /api/v1/auth/permissions`
+
+Registers a new permission code.
+
+* **Payload Parameters**:
+  <TypeTable
+    type={{
+      name: { type: 'string', required: true, description: 'Unique permission name (e.g. recipe:create).' },
+      description: { type: 'string', description: 'Brief context description.' }
+    }}
+  />
+
+---
+
+## 3. RBAC Mapping & Assignments
 
 ### Map Permission to Role
 
@@ -45,8 +71,25 @@ Assigns a permission code to a specified role.
 
 ---
 
+### Remove Permission from Role
+
+`DELETE /api/v1/auth/roles/{role_id}/permissions/{permission_id}`
+
+Revokes a permission mapping from a role.
+
+---
+
 ### Assign Role to User
 
 `POST /api/v1/auth/users/{user_id}/roles/{role_id}`
 
-Grants a role to a user.
+Grants an access role to a specific user.
+
+---
+
+### Remove Role from User
+
+`DELETE /api/v1/auth/users/{user_id}/roles/{role_id}`
+
+Revokes an assigned access role from a user.
+

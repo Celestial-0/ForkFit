@@ -1,27 +1,27 @@
 ---
 title: Shopping Agent
-description: Shopping Agent consolidating ingredient quantities and subtracting pantry stock.
+description: Shopping Agent consolidating food item quantities and subtracting pantry stock.
 ---
 
 # Shopping Agent
 
-The **Shopping Agent** consolidates the ingredients needed for all scheduled meals across the plan duration, subtracts matching items from the user's pantry stock, and estimates costs.
+The **Shopping Agent** consolidates the food items needed for all scheduled meals across the plan duration, subtracts matching items from the user's pantry stock, and estimates costs.
 
 Implementation: [shopping.py](file:///c:/Users/300079/CapCode/ForkFit/server/intelligence/src/agents/shopping.py)
 
 ---
 
-## 1. Ingredient Consolidation
+## 1. Food Item Consolidation
 
 The agent matches scheduled slots from the calendar with selected recipe requirements:
-* Sums the required ingredient quantities, scaling them based on the planned portion sizes.
-* Groups the needed ingredients by name.
+* Sums the required food item quantities, scaling them based on the planned portion sizes.
+* Groups the needed food items by name.
 
 ---
 
 ## 2. Pantry Deductions & Costing
 
-The agent cross-references the required ingredients against the user's pantry inventory:
+The agent cross-references the required food items against the user's pantry inventory:
 1. Maps user pantry items using a case-insensitive name match.
 2. If a matching pantry item has sufficient stock, the required quantity is set to 0 and pantry savings are calculated.
 3. If the pantry stock is insufficient, the available quantity is subtracted from the required amount, and savings are recorded.
@@ -35,3 +35,4 @@ The agent returns a `ShoppingResult` payload:
 * `items` (list[ShoppingItem]): Consolidated list of grocery items, including names, adjusted quantities, units, categories, and estimated costs.
 * `total_cost` (float): Consolidated cost estimate.
 * `pantry_savings` (float): Cost savings from utilizing pantry stock.
+
