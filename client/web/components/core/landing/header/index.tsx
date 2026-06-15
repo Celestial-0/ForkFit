@@ -92,7 +92,7 @@ export function Header() {
                 nativeButton={false}
               >
                 <GithubIcon className="size-4" />
-                <span>99k+</span>
+                <span>GitHub</span>
               </Button>
               <Button
                 size="sm"
