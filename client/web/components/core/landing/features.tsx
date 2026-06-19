@@ -33,7 +33,7 @@ export function Features() {
             className="md:col-span-2"
             Icon={ShieldAlert}
             description="Continuous safety audits protecting against food allergies, medical counter-indications, and diet-specific restriction violations in real-time."
-            href="/docs"
+            href="https://celestial-0.github.io/ForkFit/"
             cta="Explore Safety Model"
             background={
               <div className="absolute inset-0 opacity-40 dark:opacity-20 pointer-events-none">
@@ -49,7 +49,7 @@ export function Features() {
             className="md:col-span-1"
             Icon={Key}
             description="Built-in OAuth 2.0 (Google/GitHub), robust token authentication, rate limits, and customizable Role-Based Access Control policies."
-            href="/docs"
+            href="https://celestial-0.github.io/ForkFit/"
             cta="Inspect Security API"
             background={
               <div className="absolute inset-0 opacity-30 dark:opacity-25 pointer-events-none">
@@ -65,7 +65,7 @@ export function Features() {
             className="md:col-span-1"
             Icon={Calendar}
             description="Align meal frequencies, nutrition timings, and hydration plans directly alongside workout regimes and sleep schedules."
-            href="/docs"
+            href="https://celestial-0.github.io/ForkFit/"
             cta="Sync Workouts"
             background={
               <div className="absolute inset-0 opacity-30 dark:opacity-25 pointer-events-none">
@@ -81,7 +81,7 @@ export function Features() {
             className="md:col-span-2"
             Icon={Coins}
             description="Calculate optimal weekly shopping lists that match your target nutrition. Swaps ingredients based on real-time pantry inventory and spending bounds."
-            href="/docs"
+            href="https://celestial-0.github.io/ForkFit/"
             cta="Analyze Pricing Logic"
             background={
               <div className="absolute inset-0 opacity-40 dark:opacity-20 pointer-events-none">

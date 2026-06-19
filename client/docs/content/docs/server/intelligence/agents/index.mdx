@@ -20,6 +20,12 @@ Each agent is designed as a modular function that reads from and writes to the g
 4. **Telemetry Logging**: Emits step updates (such as input/output payloads and latency) back to the server and client.
 5. **State Update**: Updates the state dict with its results and returns.
 
+### Execution Orchestration
+
+The 11 agents in the graph are orchestrated in a hybrid parallel/serial topology to optimize execution latency and preserve logical dependencies:
+* **Parallel Specialists**: The four analysis agents—`Safety`, `Nutrition`, `Budget`, and `Culture`—are triggered in parallel, fanning out from the `Planner` node. This allows concurrent analysis of biometrics, nutritional equations, ingredient cost bounds, and cultural checks.
+* **Serial Remaining Pipeline**: Once all parallel agents finish execution (or return early), the graph fans in to the `Recipe` node. The remaining nodes (`Recipe`, `Calendar`, `Shopping`, `Consensus`, `Judge`, `Visualization`) are executed sequentially (in serial) because each relies on the outputs of the preceding nodes.
+
 ---
 
 ## 2. Shared Helpers

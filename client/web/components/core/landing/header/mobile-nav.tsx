@@ -48,7 +48,13 @@ export function MobileNav() {
 									className="justify-start"
 									key={link.label}
 									variant="ghost"
-									render={<a href={link.href} />}
+									render={
+										<a
+											href={link.href}
+											target={link.href.startsWith("http") ? "_blank" : undefined}
+											rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
+										/>
+									}
 									nativeButton={false}
 									onClick={() => setOpen(false)}
 								>

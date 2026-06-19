@@ -13,29 +13,43 @@ Implementation: [orchestrator.py](file:///c:/Users/300079/CapCode/ForkFit/server
 
 ## 1. Graph Topology
 
-The orchestrator builds a sequential execution chain. Rather than writing complex conditional fan-out logic, every node is traversed in order. An agent checks `state["required_agents"]` at the beginning of its execution and performs a fast no-op return if it is not required.
+The orchestrator compiles a StateGraph with parallel specialist nodes to optimize execution latency. It routes the execution from the `Planner` node, fanning out in parallel to four specialist agents: `Safety`, `Nutrition`, `Budget`, and `Culture`. Each of these specialist agents inspects `state["required_agents"]` at the start of execution and performs a fast no-op return if it is not required for the current run. 
+
+Once all parallel specialists finish, the graph fans in back to the `Recipe` agent. From the `Recipe` agent, execution proceeds sequentially (in serial) through the remaining chain: `Recipe` $\rightarrow$ `Calendar` $\rightarrow$ `Shopping` $\rightarrow$ `Consensus` $\rightarrow$ `Judge`.
 
 ### Node Flow Diagram
 <Mermaid
   chart="
 graph TD
     Entry([Entry]) --> Planner[Planner]
-    Planner --> Route{route_from_planner}
-    Route --> Safety[Safety]
-    Safety --> Nutrition[Nutrition]
-    Nutrition --> Budget[Budget]
-    Budget --> Culture[Culture]
-    Culture --> Recipe[Recipe]
+    Planner --> Safety[Safety]
+    Planner --> Nutrition[Nutrition]
+    Planner --> Budget[Budget]
+    Planner --> Culture[Culture]
+    
+    Safety --> Recipe[Recipe]
+    Nutrition --> Recipe
+    Budget --> Recipe
+    Culture --> Recipe
+    
     Recipe --> Calendar[Calendar]
     Calendar --> Shopping[Shopping]
     Shopping --> Consensus[Consensus]
     Consensus --> Judge[Judge]
     
-    Judge --> Verdict{verdict_router}
+    Judge --> Verdict{judge_router}
     Verdict -- Failed & attempts < max --> Planner
     Verdict -- Passed or max attempts --> Visualization[Visualization]
     Visualization --> END([END])"
 />
+
+* **Serial Orchestration Steps**:
+  * **Recipe Formulation**: Wires specialist inputs to select candidate recipes and alternatives.
+  * **Calendar Scheduling**: Maps selected recipes into daily schedules aligned with sleep and workouts.
+  * **Shopping List Generation**: Aggregates grocery requirements, deducting available pantry stocks.
+  * **Consensus Agreement**: Resolves meal conflicts and outputs a unified plan payload.
+  * **QA Quality Judge**: Validates final plans against caloric bounds, dietary restrictions, and safety profiles.
+
 
 * **Compilation**: Wires all specialist nodes, registers the conditional entry router, configures the Judge loops, and compiles the graph for async execution streaming.
 * **Routing**: The `judge_router` checks if the validation passes. If validation fails and the `replan_count` is less than `max_replan_attempts` (default 2), it routes back to the `planner` node. Otherwise, it proceeds to the `visualization` node.
