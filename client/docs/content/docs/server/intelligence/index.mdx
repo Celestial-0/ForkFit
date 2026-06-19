@@ -11,25 +11,45 @@ The ForkFit intelligence core is a Python application executing advanced cogniti
 
 ## Agent Graph Architecture
 
-The orchestrator utilizes **LangGraph** to execute a cyclic state graph. Each node runs a specialized LLM agent or evaluation tool:
+The orchestrator utilizes **LangGraph** to execute a cyclic state graph composed of 11 specialized agent nodes. Specialist agents run in parallel to minimize latency, while the remaining pipeline executes sequentially to construct, format, and verify the meal plan.
 
 <Mermaid
   chart="
 graph TD
-    UserQuery[User Query] --> Gateway[Gateway Agent]
-    Gateway --> Safety[Safety & Medical Agent]
-    Safety -- Approved --> Nutrition[Nutrition & Calories Agent]
-    Safety -- Rejected --> Block[System Alert Node]
-    Nutrition --> Budget[Budget & Shopping Agent]
-    Budget --> Generator[Dynamic UI/Text Generator]
-    Generator --> Response[Final Stream Response]"
+    UserQuery[User Query] --> Planner[Planner Agent]
+    
+    Planner --> Safety[Safety Agent]
+    Planner --> Nutrition[Nutrition Agent]
+    Planner --> Budget[Budget Agent]
+    Planner --> Culture[Culture Agent]
+    
+    Safety --> Recipe[Recipe Agent]
+    Nutrition --> Recipe
+    Budget --> Recipe
+    Culture --> Recipe
+    
+    Recipe --> Calendar[Calendar Agent]
+    Calendar --> Shopping[Shopping Agent]
+    Shopping --> Consensus[Consensus Agent]
+    Consensus --> Judge[Judge Agent]
+    
+    Judge -- Replan Loop --> Planner
+    Judge -- Approved --> Visualization[Visualization Agent]
+    Visualization --> Response[Final Stream Response]"
 />
 
 ### Core Cognitive Agents
-1. **Safety & Medical Agent**: Analyzes user's biometrics, safety constraints (e.g. allergies, kidney issues) to check if the food or plan is medically safe.
-2. **Nutrition Agent**: Calculates daily targets, evaluates macros (protein, fats, carbs), and maps ingredient calories.
-3. **Budget Agent**: Inspects pricing thresholds, local store availability, and suggests cost-efficient recipes.
-4. **Reflection Engine**: Run asynchronously after active chat feedback. It updates the user's semantic profile (written to PostgreSQL `agent_memories` table) to extract user preferences, favorite foods, or cuisines.
+1. **Planner Agent**: Parses the user request and hydrated context to generate a route plan, deciding which specialist agents are required.
+2. **Safety Agent**: Cross-references biometrics and medical restrictions (e.g., allergies) against recipes. (Runs in parallel)
+3. **Nutrition Agent**: Computes daily targets and scores recipes based on macronutrient/calorie adherence. (Runs in parallel)
+4. **Budget Agent**: Evaluates ingredient costs and suggests cheaper substitutions where needed. (Runs in parallel)
+5. **Culture Agent**: Enforces regional, cultural, or religious dietary guidelines. (Runs in parallel)
+6. **Recipe Agent**: Curates recipe selections, cooking steps, and variations.
+7. **Calendar Agent**: Schedules meals chronologically, balancing user activity and sleep cycles.
+8. **Shopping Agent**: Generates grocery lists, subtracting items already present in the user's pantry.
+9. **Consensus Agent**: Resolves conflicts and aligns multi-agent plan details into a unified plan payload.
+10. **Judge Agent**: Validates safety, nutrition, and budget rules, looping back to the Planner if replanning is needed.
+11. **Visualization Agent**: Generates JSON spec blueprints for UI rendering (e.g., charts, meal grids, shopping cards).
 
 ---
 

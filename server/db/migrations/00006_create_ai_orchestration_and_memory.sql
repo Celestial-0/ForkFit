@@ -49,21 +49,21 @@ CREATE TABLE IF NOT EXISTS agent_memories (
 
 CREATE TABLE IF NOT EXISTS recipe_embeddings (
     recipe_id uuid PRIMARY KEY REFERENCES recipes(id) ON DELETE CASCADE,
-    embedding vector(2560) NOT NULL, -- 2560 standard dimensions
+    embedding vector(1536) NOT NULL, -- 1536 dimensions
     chunk_text text NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS food_item_embeddings (
     food_item_id uuid PRIMARY KEY REFERENCES food_items(id) ON DELETE CASCADE,
-    embedding vector(2560) NOT NULL,
+    embedding vector(1536) NOT NULL,
     chunk_text text NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS agent_memory_embeddings (
     memory_id uuid PRIMARY KEY REFERENCES agent_memories(id) ON DELETE CASCADE,
-    embedding vector(2560) NOT NULL,
+    embedding vector(1536) NOT NULL,
     chunk_text text NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT now()
 );

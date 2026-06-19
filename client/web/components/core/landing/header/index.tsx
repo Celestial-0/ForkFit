@@ -21,7 +21,7 @@ export const navLinks = [
   },
   {
     label: "Docs",
-    href: "#",
+    href: "https://celestial-0.github.io/ForkFit/",
   },
 ]
 
@@ -67,7 +67,13 @@ export function Header() {
                 size="sm"
                 variant="ghost"
                 className="text-muted-foreground hover:text-foreground"
-                render={<a href={link.href} />}
+                render={
+                  <a
+                    href={link.href}
+                    target={link.href.startsWith("http") ? "_blank" : undefined}
+                    rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                  />
+                }
                 nativeButton={false}
               >
                 {link.label}
